@@ -1,0 +1,448 @@
+---
+title: "R Notebook"
+output: 
+  word_document: 
+    toc: yes
+    highlight: haddock
+    fig_width: 9
+    fig_height: 9
+    fig_caption: yes
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+# Скрипт для установки пакетов --------------------------------------------
+
+if (any(c("dplyr", "tidyr", "stringr", "ggplot2", "forecast", "openxlsx", "quantreg") %in%
+        rownames(installed.packages()) == FALSE)) {
+  install.packages(c("dplyr", "tidyr", "stringr", "ggplot2", "forecast", "openxlsx", "quantreg"))
+}
+
+
+# Подключение пакетов -----------------------------------------------------
+library(dplyr)    # Обработка фреймов
+library(tidyr)    # Пакет для приведения данных в порядок
+library(stringr)  # Пакет для обработки строк
+
+# Функция исключения тренда -----------------------------------------------
+
+# Извлечение тренда
+out_of_trend <- function(x, dt = 1, method = c("Arifm", "Geom", "Garm")) {
+  stopifnot(is.numeric(x) || is.integer(x))
+  x <- x + abs(min(x)) + 1
+  dt <- round(dt)
+  dt <- as.integer(dt)
+  method = method[1]
+  n <- length(x)
+  stopifnot(n > 2)
+  stopifnot((dt < ceiling(n/2) - 1) && (is.integer(dt)))
+  oot <- numeric(length = n)
+  if (method == "Arifm") {
+    oot <- log((x[-(1:(2*dt))] + x[-((n - 2*dt + 1):n)]) /
+                 (2 * x[-c((1:dt),((n - dt + 1):n))]))
+  } else if (method == "Geom") {
+    oot <- log((x[-(1:(2*dt))] * x[-((n - 2*dt + 1):n)]) /
+                 (x[-c((1:dt),((n - dt + 1):n))]^2))
+  } else if (method == 'Garm') {
+    oot <- log((2 * x[-(1:(2*dt))] *
+                  x[-((n - 2*dt + 1):n)]) /
+                 ((x[-(1:(2*dt))] + x[-((n - 2*dt + 1):n)]) *
+                    x[-c((1:dt),((n - dt + 1):n))]))
+  } else {
+    oot <- log((x[-(1:(2*dt))] + x[-((n - 2*dt + 1):n)]) /
+                 (2 * x[-c((1:dt),((n - dt + 1):n))]))
+  }
+  return(c(rep(0, dt), oot, rep(0, dt)))
+}
+
+# Функция Альтера-Джонса ---------------------------------------------------
+
+# Альтер-Джонс, общее решение
+Alter_Johns <- function(y, p = 1) {
+  n <- length(y)
+  tau <- 1:(n - 1)
+  at <- numeric(length = n - 1)
+  for (i in tau) {
+    at[i] <- (1/(n - i)) *
+      sum(abs(y[-(1:i)] - y[-((n - i + 1):n)]) ^ p) ^ (1 / p)
+  }
+  return(c(0, at))
+}
+```
+
+```{r download covid data}
+
+
+# Загрузка данных ---------------------------------------------------------
+
+df <- read.csv(file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+df_deaths <- read.csv(file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+df_recovered <- read.csv(file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv")
+
+# Исследование данных -----------------------------------------------------
+
+# Имена столбцов показывают, что данные о Covid19 обновляются путём добавления
+# столбцов каждый день
+#
+# Строк 273, что соответствует локациям, в которых проводятся подсчёты
+# статистики числа заболевших
+#
+# О странах известно, в каких точных (до второго знака)
+# координатах они находятся
+#
+# Типы полей - целочисленные
+
+
+# Слияние колонок страна/регион -------------------------------------------
+
+# Создадим новую колонку из двух старых
+df <- tidyr::unite(data = df,
+                   col = "Country/Province",
+                   sep = "/",
+                   Country.Region,
+                   Province.State)
+df_deaths <- tidyr::unite(data = df_deaths,
+                   col = "Country/Province",
+                   sep = "/",
+                   Country.Region,
+                   Province.State)
+df_recovered <- tidyr::unite(data = df_recovered,
+                   col = "Country/Province",
+                   sep = "/",
+                   Country.Region,
+                   Province.State)
+
+# Создание дополнительного фрейма данных с метаданными о странах ----------
+
+#“Страна/Регион”
+#Широта
+#Долгота
+#Сумма заболевших
+#Среднее число заболевших
+#Стандартное отклонение числа заболевших
+
+# Сохраним названия в отдельный вектор
+country_names <- df$`Country/Province`
+country_names_deaths <- df_deaths$`Country/Province`
+country_names_recovered <- df_recovered$`Country/Province`
+
+# Сохраним даты в отдельный вектор
+test_dates <- colnames(df)[4:ncol(df)]
+
+# Сохраним в отдельный df информацию о странах и описательные статистики
+df_meta <- data.frame(df[, 1:3],
+                      pos_mean = apply(as.matrix(df[, 4:ncol(df)]), 1, mean),
+                      pos_std = apply(as.matrix(df[, 4:ncol(df)]), 1, mean),
+                      pos_sum = apply(as.matrix(df[, 4:ncol(df)]), 1, sum))
+df_deaths_meta <- data.frame(df_deaths[, 1:3],
+                      pos_mean = apply(as.matrix(df[, 4:ncol(df)]), 1, mean),
+                      pos_std = apply(as.matrix(df[, 4:ncol(df)]), 1, mean),
+                      pos_sum = apply(as.matrix(df[, 4:ncol(df)]), 1, sum))
+df_recovered_meta <- data.frame(df[, 1:3],
+                      pos_mean = apply(as.matrix(df[, 4:ncol(df)]), 1, mean),
+                      pos_std = apply(as.matrix(df[, 4:ncol(df)]), 1, mean),
+                      pos_sum = apply(as.matrix(df[, 4:ncol(df)]), 1, sum))
+
+
+# Создание нового фрейма --------------------------------------------------
+
+# 1. Обработка дат для приведения их к стандартному формату
+
+# Избавимся от лишних символов
+test_dates <- gsub("X", "", test_dates)
+
+# Вытащим из вектора дат месяцы, дни и годы
+months <- as.numeric(stringr::str_extract(string = test_dates,
+                                          pattern = "^\\d+"))
+
+days <- as.numeric(gsub(pattern = "\\.",
+                        replacement = "",
+                        x = stringr::str_extract(test_dates, pattern = "\\.\\d+\\.")))
+
+years <- 2000 + as.numeric(gsub(pattern = "\\.",
+                                replacement = "",
+                                x = stringr::str_extract(test_dates, pattern = "\\.\\d+$")))
+
+# Преобразуем их к единому формату дат
+date_time <- ISOdate(year = years, month = months, day = days)
+date <- as.Date(date_time)
+
+# Удаление переменных
+rm("months", "days", "years", "test_dates", "date_time")
+
+# 2. Транспонирование данных и приведение к новой таблице на основе исходной
+# Измерения в исходном фрейме начинаются с 4 столбца, следовательно
+# сделаем выборку всех строк по столбцам с 4 по последний и транспонируем,
+# поскольку в пределах данного куска таблицы все данные однотипны
+new_table <- data.frame(date = date,
+                        t(as.matrix(df[,4:ncol(df)])),
+                        row.names = 1:(ncol(df) - 3))
+new_table_deaths <- data.frame(date = date,
+                        t(as.matrix(df_deaths[,4:ncol(df_deaths)])),
+                        row.names = 1:(ncol(df_deaths) - 3))
+new_table_recovered <- data.frame(date = date,
+                        t(as.matrix(df_recovered[,4:ncol(df_recovered)])),
+                        row.names = 1:(ncol(df_recovered) - 3))
+
+colnames(new_table) <- c("date", country_names)
+colnames(new_table_deaths) <- c("date", country_names_deaths)
+colnames(new_table_recovered) <- c("date", country_names_recovered)
+
+# Экспорт -----------------------------------------------------------------
+# Экспортируем подготовленные данные в csv-файл
+if (!dir.exists("output_csv")) {
+    dir.create("output_csv")
+}
+write.csv(x = new_table,
+          file = "output_csv/data_conf_output.csv")
+write.csv(x = df_meta,
+          file = "output_csv/metadata_conf.csv")
+write.csv(x = new_table_deaths,
+          file = "output_csv/data_deaths_output.csv")
+write.csv(x = df_deaths_meta,
+          file = "output_csv/metadata_deaths.csv")
+write.csv(x = new_table_recovered,
+          file = "output_csv/data_recovered_output.csv")
+write.csv(x = df_recovered_meta,
+          file = "output_csv/metadata_recovered.csv")
+
+
+# Экспортируем данные в xlsx
+if (!dir.exists("output_xlsx")) {
+    dir.create("output_xlsx")
+}
+openxlsx::write.xlsx(x = new_table, 
+                     file = "output_xlsx/data_conf_output.xlsx")
+openxlsx::write.xlsx(x = df_meta, 
+                     file = "output_xlsx/metadata_conf.xlsx")
+openxlsx::write.xlsx(x = new_table_deaths, 
+                     file = "output_xlsx/data_deaths_output.xlsx")
+openxlsx::write.xlsx(x = df_deaths_meta, 
+                     file = "output_xlsx/metadata_deaths.xlsx")
+openxlsx::write.xlsx(x = new_table_recovered, 
+                     file = "output_xlsx/data_recovered_output.xlsx")
+openxlsx::write.xlsx(x = df_recovered_meta, 
+                     file = "output_xlsx/metadata_recovered.xlsx")
+# Удаление переменных сессии ----------------------------------------------
+rm("country_names", "country_names_deaths", 
+   "country_names_recovered", "date", "df", 
+   "df_meta", "df_deaths", "df_deaths_meta", 
+   "df_recovered", "df_recovered_meta")
+
+
+```
+
+
+```{r subset Russia}
+covid_Russia_confid <- select(new_table, contains("Russia"))
+covid_Russia_recovered <- select(new_table_recovered, contains("Russia"))
+covid_Russia_deaths <- select(new_table_deaths, contains("Russia"))
+
+covid_Russia_confid$diff_total <- c(0, diff(covid_Russia_confid$`Russia/`))
+covid_Russia_confid$days_total <- 1:nrow(new_table)
+covid_Russia_confid$date <- as.Date(new_table$date)
+```
+
+
+
+```{r plot Russia diff}
+plot(x = covid_Russia_confid$days_total, y = covid_Russia_confid$diff_total, 
+     main = "Динамика заболеваемости в России",
+     xlab = "Даты",
+     ylab = "Заболеваемость каждый день в чел.", type = "o",
+     xaxt = "none", pch = 19)
+axis(1, seq(0, nrow(new_table), 25))
+abline(v = seq(0, nrow(new_table), 25), lty = 3, col = "grey")
+abline(v = which(covid_Russia_confid$diff_total == 1)[1:2], col = "red")
+text(x = which(covid_Russia_confid$diff_total == 1)[1:2] + c(-5, 5), y = 2000, labels = which(covid_Russia_confid$diff_total == 1)[1:2])
+
+begin <- which(covid_Russia_confid$diff_total == 1)[2]
+```
+
+Нами было установлено что, процесс заболеваемости в России начинается с 44 дня после начала процесса съема характеристик
+
+```{r subset from beginning}
+covid_Russia_confid <- select(new_table[-(1:(begin-1)) ,], contains("Russia"))
+covid_Russia_recovered <- select(new_table_recovered, contains("Russia"))
+covid_Russia_deaths <- select(new_table_deaths, contains("Russia"))
+
+covid_Russia_confid$diff_total <- c(0, diff(covid_Russia_confid$`Russia/`))
+covid_Russia_confid$days_total <- 1:nrow(covid_Russia_confid)
+covid_Russia_confid$date <- as.Date(new_table$date[-(1:(begin-1))])
+```
+
+
+
+```{r plot Russia from begin}
+plot(x = covid_Russia_confid$days_total, y = log(covid_Russia_confid$diff_total), 
+     main = "Динамика заболеваемости в России",
+     xlab = "Даты",
+     ylab = "Заболеваемость каждый день в чел.", type = "o", pch = 19)
+abline(v = seq(0, nrow(covid_Russia_confid), 29.539), lty = 3, col = "grey")
+```
+
+
+```{r parabola}
+date_secundo <- which.max(covid_Russia_confid$diff_total)
+covid_Russia_confid$days_quadr <- covid_Russia_confid$days_total^2
+model_parabola <- lm(covid_Russia_confid$diff_total[-(1:(date_secundo - 1))] ~ covid_Russia_confid$days_total[-(1:(date_secundo - 1))] + covid_Russia_confid$days_quadr[-(1:(date_secundo - 1))])
+beta_p <- model_parabola$coefficients[3]
+alpha_p <- model_parabola$coefficients[2]
+ceta_p <- model_parabola$coefficients[1]
+
+plot(x = covid_Russia_confid$days_total, y = covid_Russia_confid$diff_total, 
+     main = "Динамика заболеваемости в России",
+     xlab = "Даты",
+     ylab = "Заболеваемость каждый день в чел.", type = "o",
+     xaxt = "none", pch = 19)
+axis(1, seq(0, nrow(new_table), 25))
+abline(v = seq(0, nrow(new_table), 25), lty = 3, col = "grey")
+abline(v = date_secundo, col = "red")
+text(x = date_secundo, y = max(covid_Russia_confid$diff_total)/2, 
+     labels = covid_Russia_confid$date[date_secundo])
+lines(x = covid_Russia_confid$days_total, y = ceta_p + alpha_p * covid_Russia_confid$days_total + beta_p * covid_Russia_confid$days_quadr, col = "green")
+```
+
+```{r subset_last}
+last_Russia <- covid_Russia_confid[-(1:(date_secundo-1)),]
+
+model_lm <- lm(log(last_Russia$diff_total) ~ last_Russia$days_total)
+beta_lm <- model_lm$coefficients[2]
+alpha_lm <- model_lm$coefficients[1]
+
+model_rq <- quantreg::rq(log(last_Russia$diff_total) ~ last_Russia$days_total, tau = 0.05)
+beta_rq <- model_rq$coefficients[2]
+alpha_rq <- model_rq$coefficients[1]
+
+model_rq2 <- quantreg::rq(log(last_Russia$diff_total) ~ last_Russia$days_total, tau = 0.95)
+beta_rq2 <- model_rq2$coefficients[2]
+alpha_rq2 <- model_rq2$coefficients[1]
+
+plot(x = last_Russia$days_total, y = log(last_Russia$diff_total), 
+     main = "Последние данные ряда", 
+     xlab = paste("Дни с", covid_Russia_confid$date[1]), 
+     ylab = "Логарифмическая шкала заболеваемости")
+abline(a = alpha_lm, b = beta_lm, col = "red")
+abline(a = alpha_rq, b = beta_rq, col = "blue")
+abline(a = alpha_rq2, b = beta_rq2, col = "blue")
+legend(x = 360, y = 10, legend = c("Линейная регрессия", "Квантиль 0.05 и 0.95"), 
+       col = c("red", "blue"), lty = c(1, 1))
+```
+
+
+```{r plot model}
+h <- 50
+
+plot(x = covid_Russia_confid$days_total, y = covid_Russia_confid$diff_total, 
+     main = "Динамика заболеваемости в России",
+     xlab = "Даты",
+     ylab = "Заболеваемость каждый день в чел.", type = "o",
+     xaxt = "none", pch = 19,
+     xlim = c(0, nrow(covid_Russia_confid) + h))
+axis(1, seq(0, nrow(new_table), 25))
+abline(v = seq(0, nrow(new_table), 25), lty = 3, col = "grey")
+abline(v = date_secundo + (-16:4) * 114/4, col = c("purple", "gold", "gold", "gold"))
+text(x = date_secundo + (-2:0) * 114, y = max(covid_Russia_confid$diff_total)/2, 
+     labels = covid_Russia_confid$date[date_secundo + (-2:0) * 114])
+lines(x = c(covid_Russia_confid$days_total, nrow(covid_Russia_confid) + (1:h)), 
+      y = exp(beta_rq * c(covid_Russia_confid$days_total, nrow(covid_Russia_confid) + (1:h)) + alpha_rq), 
+      col = "blue", type = "l")
+lines(x = c(covid_Russia_confid$days_total, nrow(covid_Russia_confid) + (1:h)), 
+      y = exp(beta_lm * c(covid_Russia_confid$days_total, nrow(covid_Russia_confid) + (1:h)) + alpha_lm), 
+      col = "red", type = "l")
+lines(x = c(covid_Russia_confid$days_total, nrow(covid_Russia_confid) + (1:h)), 
+      y = exp(beta_rq2 * c(covid_Russia_confid$days_total, nrow(covid_Russia_confid) + (1:h)) + alpha_rq2), 
+      col = "blue", type = "l")
+text(x = date_secundo + 114, y = max(covid_Russia_confid$diff_total)/2, 
+     labels = as.Date(as.numeric(covid_Russia_confid$date[date_secundo]) + 114, 
+     origin = "1970-01-01"))
+abline(v = c(date_secundo - 2 *  114 + 114 / 4 + 114 / 7.8, date_secundo + 114/ 3.7), col = "red")
+```
+
+```{r}
+covid_Russia_confid$diff_total[date_secundo] / covid_Russia_confid$diff_total[date_secundo + 114/ 3.7]
+```
+
+
+```{r}
+print(as.numeric(covid_Russia_confid$date[date_secundo]))
+print(covid_Russia_confid$date[date_secundo])
+print(as.Date(18620, origin = "1970-01-01"))
+```
+
+```{r}
+times <- ts(log(covid_Russia_confid$diff_total[-(1:7)]),  frequency = 7)
+stl_model <- stl(times, s.window = "periodic")
+plot(stl_model)
+
+stl_matrix <- as.matrix(stl_model$time.series)
+```
+```{r}
+plot(as.numeric(exp(stl_matrix[, 2] + stl_matrix[, 1])), type = "l")
+lines(as.numeric(exp(times)), col = "red")
+```
+
+```{r}
+# Оценка линии регрессии для перовго прямолинейного участка на анаморфозе Гомперца
+alpha_g1 <- -0.033
+beta_g1 <- -1.0
+
+# Оценка линии регрессии для второго прямолинейного участка на анаморфозе Гомперца
+alpha_g2 <- -0.02
+beta_g2 <- 1.1
+
+# График анаморфозы Гомперца
+plot(log(as.numeric(exp(stl_matrix[, 2]))/cumsum(as.numeric(exp(stl_matrix[, 2])))))
+
+# Линия регрессии для первого прямолинейного участка на анаморфозе Гомперца
+abline(a = beta_g1, b = alpha_g1, col = "red")
+abline(v = 100)
+abline(h = log(-alpha_g1), col = "red")
+arrows(x0 = (log(-alpha_g1) - beta_g1)/alpha_g1, 
+       x1 = (log(-alpha_g1) - beta_g1)/alpha_g1,
+       y0 = log(-alpha_g1),
+       y1 = 0, 
+       col = "red")
+
+# Линия регрессии для второго прямолинейного участка на анаморфозе Гомперца
+abline(a = beta_g2, b = alpha_g2, col = "red")
+abline(v = 100)
+abline(h = log(-alpha_g2), col = "red")
+arrows(x0 = (log(-alpha_g2) - beta_g2)/alpha_g2, 
+       x1 = (log(-alpha_g2) - beta_g2)/alpha_g2,
+       y0 = log(-alpha_g2),
+       y1 = 0, 
+       col = "red")
+
+```
+
+
+```{r}
+plot(as.numeric(exp(stl_matrix[, 2] + stl_matrix[, 1])), type = "l")
+lines(as.numeric(exp(times)), col = "red")
+lines(x = 1:nrow(stl_matrix), y = exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * cumsum(exp(stl_matrix[, 2])), col = "blue")
+# lines(x = ((date_secundo-100):nrow(stl_matrix)), y = exp(alpha_g2 * ((date_secundo-100):nrow(stl_matrix)) + beta_g2) * cumsum(exp(stl_matrix[, 2][((date_secundo-100):nrow(stl_matrix))])) + 5000, col = "purple")
+#lines(x = 1:100, y = exp(alpha_g * 1:100 + beta_g) * cumsum(exp(stl_matrix[, 2][1:100])), col = "blue")
+```
+
+
+```{r}
+plot(as.numeric(exp(stl_matrix[, 2] + stl_matrix[, 1])) - exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * cumsum(exp(stl_matrix[, 2])), type = "l")
+lines(as.numeric(exp(times)) - exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * cumsum(exp(stl_matrix[, 2])), col = "red")
+
+g2_times <- as.numeric(exp(times)) - exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * cumsum(exp(stl_matrix[, 2]))
+g2_beg <- as.numeric(exp(stl_matrix[, 2] + stl_matrix[, 1])) - exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * cumsum(exp(stl_matrix[, 2]))
+```
+
+
+
+```{r}
+alpha_g2_beg <- 
+beta_g2_beg <- -2
+plot(x = 1:length(g2_beg), y = log(g2_beg/cumsum(g2_beg)), 
+     xlim = c(139, length(g2_beg)))
+abline(a = alpha_g2_beg, b = beta_g2_beg)
+```
+
+
