@@ -1,15 +1,16 @@
 # Create dir --------------------------------------------------------------
 
-if (!dir.exists("R/output_pngs/Russia/")){
-  dir.create("R/output_pngs/Russia/")
+if (!dir.exists("./output_pngs/Russia/")){
+  dir.create("./output_pngs/Russia/")
 }
-if (!dir.exists("R/output_pngs/Russia/Exploration")) {
-  dir.create("R/output_pngs/Russia/Exploration")
+
+if (!dir.exists("./output_pngs/Russia/Exploration")) {
+  dir.create("./output_pngs/Russia/Exploration")
 }
 
 
 # get data ----------------------------------------------------------------
-df_confirmed <- read.csv("output_csv/data_conf_output.csv")
+df_confirmed <- read.csv("./output_csv/data_conf_output.csv")
 df_confirmed$date <- as.Date(df_confirmed$date)
 
 
@@ -35,7 +36,7 @@ plot_cumul <- ggplot2::ggplot(data = df_Russia,
                 y = "Кумулятивная сумма заболевших, чел.",
                 title = "Общая сумма переболевших Covid19 по России")
 
-png(filename = "R/output_pngs/Russia/Exploration/Cumulative.png", width = 1000, height = 900, res = 90)
+png(filename = "./output_pngs/Russia/Exploration/Cumulative.png", width = 1000, height = 900, res = 90)
 plot(plot_cumul)
 dev.off()
 
@@ -47,7 +48,7 @@ plot_diff <- ggplot2::ggplot(data = df_Russia,
                                            y = diff_conf)) +
   ggplot2::geom_line(lwd = 0.5) +
   ggplot2::geom_point() +
-  ggplot2::theme_bw(base_size = 14) +
+  ggplot2::theme_bw(base_size = 12) +
   ggplot2::scale_x_date(breaks = function(x) seq.Date(from = min(x), to = max(x), by = "2 months"),
                         minor_breaks = function(x) seq.Date(from = min(x), to = max(x), by = "1 month")) +
   ggplot2::scale_y_continuous(breaks = function(y) seq(0, max(y), max(y) %/% 10)) +
@@ -58,8 +59,21 @@ plot_diff <- ggplot2::ggplot(data = df_Russia,
 
 plot(plot_diff)
 
-png(filename = "R/output_pngs/Russia/Exploration/Differential.png", width = 1000, height = 900, res = 90)
+png(filename = "./output_pngs/Russia/Exploration/Differential.png", width = 1000, height = 900, res = 90)
 plot(plot_diff)
 dev.off()
 
+
+
+plot_diff_part <- plot_diff + ggplot2::coord_cartesian(c(as.Date("2020-12-29"), max(df_Russia$date))) +
+  ggplot2::scale_x_date(breaks = function(x) seq.Date(from = min(x), to = max(x), by = "10 days"),
+                        minor_breaks = function(x) seq.Date(from = min(x), to = max(x), by = "5 day"))
+
+png(filename = "./output_pngs/Russia/Exploration/Differential_part.png", width = 1000, height = 900, res = 90)
+plot(plot_diff_part)
+dev.off()
+
+
+
 rm("plot_diff")
+rm(list = ls())
