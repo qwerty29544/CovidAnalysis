@@ -282,6 +282,12 @@ plot(x = covid_Russia_confid$days_total, y = log(covid_Russia_confid$diff_total)
 abline(v = seq(0, nrow(covid_Russia_confid), 29.539), lty = 3, col = "grey")
 ```
 
+```{r}
+plot(x = diff(covid_Russia_confid$diff_total)[-c(1:7)], y = diff(covid_Russia_confid$diff_total)[-((nrow(covid_Russia_confid) - 6 - 1):(nrow(covid_Russia_confid) - 1))], col = "red")
+
+plot(diff(covid_Russia_confid$diff_total)[])
+```
+
 
 ```{r parabola}
 date_secundo <- which.max(covid_Russia_confid$diff_total)
@@ -434,7 +440,157 @@ lines(as.numeric(exp(times)) - exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * 
 g2_times <- as.numeric(exp(times)) - exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * cumsum(exp(stl_matrix[, 2]))
 g2_beg <- as.numeric(exp(stl_matrix[, 2] + stl_matrix[, 1])) - exp(alpha_g1 * (1:nrow(stl_matrix)) + beta_g1) * cumsum(exp(stl_matrix[, 2]))
 ```
+```{r}
+World_covid <- data.frame(days =  1:nrow(new_table),
+                          dates = as.Date(new_table$date), 
+                          world_sum = rowSums(new_table[, -1]),
+                          world_diff = c(0,diff(rowSums(new_table[, -1]))))
+```
 
+```{r}
+png(filename = "covid_world_mul.png", width = 800, height = 500, res = 80)
+plot(World_covid$world_diff, type = "o", 
+     pch = 19, cex = I(0.5), col = "blue", 
+     xlab = paste("Дни от", min(World_covid$dates)), 
+     ylab = "Число новых заражений по миру", 
+     main = "График числа новых заражений Covid19 по всему миру",
+     xaxt = "n",
+     yaxt = "n",
+     xlim = c(80, max(World_covid$days) + 30))
+axis(1, seq(0, max(World_covid$days) + 150, 40))
+axis(2, seq(0, max(World_covid$world_diff) + round(max(World_covid$world_diff) %/% 10, digits = -3), round(max(World_covid$world_diff) %/% 10, digits = -3)))
+abline(h = seq(0, max(World_covid$world_diff) + round(max(World_covid$world_diff) %/% 10, digits = -3), round(max(World_covid$world_diff) %/% 10, digits = -3)), lty = 4, col = "grey", lwd = I(0.5))
+abline(v = seq(0, max(World_covid$days) + 150, 40), lty = 4, col = "grey", lwd = I(0.5))
+dev.off()
+```
+```{r}
+png(filename = "covid_world_mul_log.png", width = 800, height = 500, res = 80)
+plot(log(World_covid$world_diff), type = "o", 
+     pch = 19, cex = I(0.5), col = "blue", 
+     xlab = paste("Дни от", min(World_covid$dates)), 
+     ylab = "Число новых заражений по миру", 
+     main = "График числа новых заражений Covid19 по всему миру",
+     xaxt = "n",
+     yaxt = "n",
+     xlim = c(80, max(World_covid$days) + 30),
+     ylim = c(10.9, 14.3))
+axis(1, seq(0, max(World_covid$days) + 150, 40))
+axis(2, seq(0, max(log(World_covid$world_diff)) + 1, 1))
+abline(h = seq(0, max(log(World_covid$world_diff)) + 1, 1), lty = 4, col = "grey", lwd = I(0.5))
+abline(v = seq(0, max(World_covid$days) + 150, 40), lty = 4, col = "grey", lwd = I(0.5))
+dev.off()
+```
+```{r}
+png("trend.png", width = 800, height = 800)
+forecast::ggtsdisplay(log(World_covid$world_diff[-(1:80)]))
+dev.off()
+png("diff.png", width = 800, height = 800)
+forecast::ggtsdisplay(diff(log(World_covid$world_diff[-(1:80)])))
+dev.off()
+```
+```{r}
+stl_model <- stl(x = ts(log(World_covid$world_diff[-(1:80)]), frequency = 7), 
+                 s.window = "periodic")
+png("stl.png", width = 800, height = 800)
+forecast::autoplot(stl_model)
+dev.off()
+```
+```{r}
+stl_matrix <- as.matrix(stl_model$time.series)
+plot(as.numeric(stl_matrix[, 2] + stl_matrix[, 1]))
+```
+
+```{r}
+fitted <- as.numeric(stl_matrix[, 2] + stl_matrix[, 1])
+png(filename = "covid_world_mul_log.png", width = 800, height = 800, res = 90)
+plot(log(World_covid$world_diff), type = "o", 
+     pch = 19, cex = I(0.5), col = "blue", 
+     xlab = paste("Дни от", min(World_covid$dates)), 
+     ylab = "Число новых заражений по миру", 
+     main = "График числа новых заражений Covid19 по всему миру",
+     xaxt = "n",
+     yaxt = "n",
+     xlim = c(80, max(World_covid$days) + 30),
+     ylim = c(10.9, 14.3))
+axis(1, seq(0, max(World_covid$days) + 150, 40))
+axis(2, seq(0, max(log(World_covid$world_diff)) + 1, 1))
+abline(h = seq(0, max(log(World_covid$world_diff)) + 1, 1), lty = 4, col = "grey", lwd = I(0.5))
+abline(v = seq(0, max(World_covid$days) + 150, 40), lty = 4, col = "grey", lwd = I(0.5))
+lines(x = 1:length(fitted) + 80, y = fitted, col = "red")
+legend(x = 400, y = 11.5, legend = c("real", "seas + trend"), col = c("blue", "red"), pch = c(19, 1), lty = c(1, 1))
+dev.off()
+```
+
+```{r}
+fitted_trend <- as.numeric(stl_matrix[, 2])
+fitted_seasonal <- as.numeric(stl_matrix[, 1])
+fitted_res <- as.numeric(stl_matrix[, 3])
+```
+
+
+```{r}
+plot(fitted_trend, type = "l")
+lm_model_Data <- data.frame(x = (length(fitted_trend) - 40):length(fitted_trend) + 80, y = fitted_trend[(length(fitted_trend) - 40):length(fitted_trend)])
+plot(lm_model_Data)
+lm_model <- lm(y ~ x, data = lm_model_Data)
+lines(x = (length(fitted_trend) - 40):length(fitted_trend) + 80, y = lm_model$fitted.values)
+
+df_new <- data.frame(x = (length(fitted_trend) + 1):(length(fitted_trend) + 31) + 80)
+future <- predict(lm_model, df_new, se = T)
+
+df_new$pred <- future$fit
+df_new$se_low <- future$fit - future$se.fit
+df_new$se_high <- future$fit + future$se.fit
+df_new$seasonal <- fitted_seasonal[df_new$x - 7 - (30 - (30 %% 7)) - 80]
+plot(x = df_new$x, y = df_new$seasonal)
+```
+```{r}
+fitted <- as.numeric(stl_matrix[, 2] + stl_matrix[, 1])
+png(filename = "covid_world_mul_log.png", width = 800, height = 800, res = 90)
+plot(log(World_covid$world_diff), type = "o", 
+     pch = 19, cex = I(0.5), col = "blue", 
+     xlab = paste("Дни от", min(World_covid$dates)), 
+     ylab = "Число новых заражений по миру", 
+     main = "График числа новых заражений Covid19 по всему миру",
+     xaxt = "n",
+     yaxt = "n",
+     xlim = c(80, max(World_covid$days) + 30),
+     ylim = c(10.9, 14.3))
+axis(1, seq(0, max(World_covid$days) + 150, 40))
+axis(2, seq(0, max(log(World_covid$world_diff)) + 1, 1))
+abline(h = seq(0, max(log(World_covid$world_diff)) + 1, 1), lty = 4, col = "grey", lwd = I(0.5))
+abline(v = seq(0, max(World_covid$days) + 150, 40), lty = 4, col = "grey", lwd = I(0.5))
+lines(x = 1:length(fitted) + 80, y = fitted, col = "red")
+legend(x = 400, y = 11.5, legend = c("real", "seas + trend"), col = c("blue", "red"), pch = c(19, 1), lty = c(1, 1))
+lines(x = df_new$x, y = df_new$pred, col = "darkgreen")
+lines(x = df_new$x, y = df_new$pred + df_new$seasonal, col = "darkgreen")
+lines(x = df_new$x, y = df_new$se_low + df_new$seasonal, col = "darkblue")
+lines(x = df_new$x, y = df_new$se_high + df_new$seasonal, col = "darkblue")
+dev.off()
+```
+
+```{r}
+png(filename = "covid_world_mul_new.png", width = 800, height = 800, res = 80)
+plot(World_covid$world_diff, type = "o", 
+     pch = 19, cex = I(0.5), col = "blue", 
+     xlab = paste("Дни от", min(World_covid$dates)), 
+     ylab = "Число новых заражений по миру", 
+     main = "График числа новых заражений Covid19 по всему миру",
+     xaxt = "n",
+     yaxt = "n",
+     xlim = c(220, max(World_covid$days) + 30))
+axis(1, seq(0, max(World_covid$days) + 150, 40))
+axis(2, seq(0, max(World_covid$world_diff) + round(max(World_covid$world_diff) %/% 10, digits = -3), round(max(World_covid$world_diff) %/% 10, digits = -3)))
+abline(h = seq(0, max(World_covid$world_diff) + round(max(World_covid$world_diff) %/% 10, digits = -3), round(max(World_covid$world_diff) %/% 10, digits = -3)), lty = 4, col = "grey", lwd = I(0.5))
+abline(v = seq(0, max(World_covid$days) + 150, 40), lty = 4, col = "grey", lwd = I(0.5))
+lines(x = 1:length(fitted) + 80, y = exp(fitted), col = "red")
+legend(x = 400, y = exp(11.5), legend = c("real", "seas + trend"), col = c("blue", "red"), pch = c(19, 1), lty = c(1, 1))
+lines(x = df_new$x, y = exp(df_new$pred), col = "darkgreen")
+lines(x = df_new$x, y = exp(df_new$pred + df_new$seasonal), col = "darkgreen")
+lines(x = df_new$x, y = exp(df_new$se_low + df_new$seasonal), col = "darkblue")
+lines(x = df_new$x, y = exp(df_new$se_high + df_new$seasonal), col = "darkblue")
+dev.off()
+```
 
 
 ```{r}
