@@ -6,9 +6,11 @@ library(openxlsx) # Пакет для экспорта данных в xlsx
 
 # Загрузка данных ---------------------------------------------------------
 df <- read.csv(file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+cat("\nConfid data downloaded!\n")
 df_deaths <- read.csv(file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+cat("\nDeaths data downloaded\n")
 df_recovered <- read.csv(file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv")
-
+cat("\nRecovered data downloaded\n")
 # Исследование данных -----------------------------------------------------
 
 # Имена столбцов показывают, что данные о Covid19 обновляются путём добавления
