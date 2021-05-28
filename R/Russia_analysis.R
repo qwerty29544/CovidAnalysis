@@ -322,19 +322,57 @@ grid()
 gmp_diff2_it <- df_Russia$wo_gmp1[(date_max - period - 10):nrow(df_Russia)]
 gmp_diff2 <- gmp_diff2_it - min(gmp_diff2_it)
 
+# График второго горба ----------------------------------------------------
 plot(gmp_diff2, type = "o", pch = 19)
 
-
+# Анаморфоза Гомперца -----------------------------------------------------
 plot(log(gmp_diff2 / cumsum(gmp_diff2)))
 gmp_diff2_alpha <- -0.0222
 gmp_diff2_beta <- -1.44
 abline(a = gmp_diff2_beta, b = gmp_diff2_alpha)
 
+# Аппроксимация второго горба функцией Гомперца ---------------------------
+gmp_diff2_approx <- exp(gmp_diff2_alpha * 1:length(gmp_diff2) + gmp_diff2_beta) * cumsum(gmp_diff2)
 plot(gmp_diff2, type = "o", pch = 19)
-lines(x = 1:length(gmp_diff2_it), y = exp(gmp_diff2_alpha * 1:length(gmp_diff2) + gmp_diff2_beta) * cumsum(gmp_diff2))
+lines(x = 1:length(gmp_diff2_it), y = gmp_diff2_approx)
 
-gmp_itog2 <- c(rep(0, max((date_max - period - 11))), exp(gmp_diff2_alpha * 1:length(gmp_diff2) + gmp_diff2_beta) * cumsum(gmp_diff2) + min(gmp_diff2_it))
 
+# Анаморфоза для поиска y_inf ---------------------------------------------
+plot(y = gmp_diff2 / cumsum(gmp_diff2), x = log(cumsum(gmp_diff2)),
+     ylim = c(0, 0.2), xlim = c(8, 17), cex = I(0.6), pch = 19)
+a <- -0.02
+b <-  0.29876
+abline(col = "red",
+       a = b, b = a)
+abline(h = 0, col = "red")
+abline(v = -b / a, col = "red")
+y_inf <- exp(-b / a)
+
+
+# Отрисовка кумулятивной суммы --------------------------------------------
+plot(cumsum(gmp_diff2), xlim = c(0, 400), ylim = c(0, y_inf))
+
+future <- 200
+predict_gmp <- function(ts_last, k, pred_forecast, y_inf) {
+  forecast_future <- numeric(length = pred_forecast)
+  for (i in 1:pred_forecast) {
+    forecast_future[i] <- exp(-k * i) * log(ts_last) + (1 - exp(-k * i)) * log(y_inf)
+  }
+  return(forecast_future)
+}
+
+future_gmp = exp(predict_gmp(ts_last = cumsum(gmp_diff2)[length(gmp_diff2)],
+                             k = -gmp_diff2_alpha, pred_forecast = future, y_inf = y_inf))
+plot(cumsum(gmp_diff2), xlim = c(0, 400), ylim = c(0, y_inf))
+lines(x = (length(gmp_diff2) + 1):(length(gmp_diff2) + future), y = future_gmp, col = "red")
+abline(h = y_inf)
+
+gmp_itog2 <- c(rep(0, max((date_max - period - 11))),
+               exp(gmp_diff2_alpha *
+                     1:length(gmp_diff2) +
+                     gmp_diff2_beta) *
+                 cumsum(gmp_diff2) +
+                 min(gmp_diff2_it))
 
 png(file = paste0(plot_dir, "/gmp_full.png"), width = 1000, height = 900, res = 90)
 plot(x = df_Russia$rownum, y = df_Russia$diff_conf,
@@ -358,15 +396,11 @@ text(x = which.max(df_Russia$diff_conf) + 26, y = max(df_Russia$diff_conf) - 700
 abline(v = c(df_Russia$rownum[max(interval3)],
              df_Russia$rownum[max(interval3)] + 36),
        col = "red", lty = 2)
-lines(x = 1:length(c(interval4,interval4)) + max(interval3),
-      y = exp(log(lm1$coefficients[1] +
-                    lm1$coefficients[2] * (1:length(c(interval4,interval4))) +
-                    lm1$coefficients[3] * (1:length(c(interval4,interval4)))^2) +
-                c(stl_matrix1[,1], stl_matrix1[,1])),
-      col = "orange")
 grid()
 lines(gmp_itog2 + exp(gmp12_alpha * df_Russia$rownum + gmp12_beta) *
         cumsum(df_Russia$diff_conf), col = "blue")
+lines(x = max(interval4):(max(interval4) + future - 2),
+      y = diff(future_gmp) + min(gmp_diff2_it), col = "red")
 dev.off()
 
 
