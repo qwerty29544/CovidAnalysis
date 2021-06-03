@@ -427,8 +427,8 @@ $$
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
 plot(x = 1:(nrow(df_Russia) - 2), 
      y = log(df_Russia$diff_conf[-(1:2)] * df_Russia$diff_conf[-((nrow(df_Russia) - 1):nrow(df_Russia))] / df_Russia$diff_conf[-c(1, nrow(df_Russia))]^2),
-     main = "График первой разности исходного временного ряда",
-     ylab = "Значения первой производной динамики заболеваемости",
+     main = "График исключения тренда для исходного временного ряда",
+     ylab = "Значения функции исключения тренда для динамики заболеваемости",
      xlab = "Дни от 2020-01-22",
      type = "o",
      pch = 19,
@@ -486,7 +486,7 @@ axis(1, seq(0, max_lag, 7))
 
 ## Анализ медленных движений ряда
 
-Предварительно рассмотрим два повторяющихся пика на графике динамики численности заболевших, совместив их максимумы "друг под другом", таким образом мы сможем оценить совпадающие критические уровни в развитии системы на данных интервалах и оценить схожесть тендеции развития на каждой из "волн" заболеваемости.
+Предварительно рассмотрим два повторяющихся пика на графике динамики численности заболевших, совместив их максимумы "друг под другом", таким образом мы сможем оценить совпадающие критические уровни в развитии системы на данных интервалах и оценить схожесть тендеции развития на каждой из "волн" заболеваемости. Для совмещения значений двух пиков отнормируем больший пик к меньшему делением значений на максимальное значение большего ряда и умножим их на максимальное значение меньшего. По пропорциям получим исходную форму графика, что позволит на уровне относительных величин сравнивать формы кривых динамики развития системы.
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
 interval1 <- 1:(date_max - 2 * period - 1)
@@ -520,10 +520,20 @@ text(x = df_Russia$date[3], y = max(df_Russia$diff_conf[c(interval1, interval2)]
      labels = round(max(df_Russia$diff_conf[c(interval1, interval2)]) / 1.44))
 ```
 
+Как видим исходя из графика, значения пиков совмещены вместе со значениями в 1.44 раза меньше по сравнению с наибольшим значением волны. Это является прямым доказательством связи данных участков друг с другом, а также показывает возможное проявление модели Гомперца в качестве основной модели развития системы во времени, то есть трендовой модели.
+Время между максимальным значением и значением, меньшим в 1.44 раза lag = 36 дней.
 
-36 дней
+## Исследование тренда на основе модели Гомперца
 
-1.44 раза
+Модель Гомперца - дифференциальная модель ограниченного роста, отражающая по-сути развитие популяций, в основе которой лежит понимание ограничения на рост системы. Такая модель является наиболее точной среди остальных моделей развития популяций, ввиду несиметричности теоретической кривой решения. Началу процесса характерен резкий подъём, а после точки максимума скорости развития системы происходит уменьшение темпов роста с менее быстрой скоростью. Такая модель наиболее удобна с точки зрения аппроксимации реальных данных по причине наибольшей распространённости процессов с похожей динамикой.
+
+Рассмотрим получение параметров модели Гомперца для реальных данных на основе спрямления в функциональных координатах. Теоретически модель Гомперца была описана в соответствующем разделе, также и описаны методы получения параметров модели.
+
+Для первого интервала в 228 дней от начала процесса построим график в функциональных координатах анаморфозы модели Гомперца.
+
+$$
+  ln \left( \frac{1}{y} \frac{dy}{dt} \right) \sim t
+$$
 
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
@@ -549,7 +559,16 @@ arrows(x0 = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha,
        y1 = 0)
 text(x = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha, y = 0,
      labels = df_Russia$date[round((log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha)])
+text(x = 25, y = log(-gmp12_alpha) + 0.25, labels = paste("ln(k) =", round(log(-gmp12_alpha), 2)))
+text(x = 85, y = -1, labels = paste("-k =", gmp12_alpha, "; b =", gmp12_beta))
+abline(h = 0, lty = 2)
 ```
+
+На графике в координатах анаморфозы Гомерца видим спрямление участка данных. Данный факт говорит о принадлежности данного участка дифференциальной модели Гомперца по определению функциональных координат, в которых построен график. 
+
+Параметры прямой в функциональных координатах: `r paste("ln(-k) =", round(log(-gmp12_alpha), 2),"; -k =", gmp12_alpha, "; b =", gmp12_beta)`.
+
+Вернув данные параметры в исходное уравнение получим оценку тренда по модели Гомперца. Отобразим теоретическую модельную кривую и исходные данные на графике.
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
 plot(x = diff_russia12_x, y = diff_russia12_y,
@@ -561,7 +580,14 @@ lines(x = diff_russia12_x,
       y = exp(gmp12_alpha * diff_russia12_x + gmp12_beta) *
         cumsum(diff_russia12_y), col = "red")
 abline(v = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha, col = "red")
+abline(v = 160)
+abline(v = seq(0, 230, 10), lty = 2, col = "grey", lwd = I(0.5))
+abline(h = seq(0, 12000, 1000), lty = 2, col = "grey", lwd = I(0.5))
 ```
+
+На графике видно, что первые 160 значений ряда данных подчинялись с определённой точностью полученной теоретической зависимости. В точке $t = 160$ модельная кривая и реальные данные расходятся в значениях в большую сторону у реальных данных, что может символизировать о начале переходного процесса перед реализацией новой волны заражений.
+
+Отобразим полученную теоретическую Гомперцевую кривую на всей области определения исходного ряда данных.
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
 plot(x = df_Russia$rownum, y = df_Russia$diff_conf,
@@ -590,6 +616,8 @@ lines(x = df_Russia$rownum,
 abline(v = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha, col = "red")
 ```
 
+В рамках анализа исключим из рассмотрения полученную теоретическую зависимость по модели Гомперца и оценим возможность реализации новой модели на второй "волне" заражений. Отобразим на графике занчения после исключения первой теоретической Гомперцевой кривой. Полученный ряд имеет незначительные флуктуации вначале из-за точности трендовой аппроксимации, а также имеет только один ярко выраженный пик на диапазоне второй волны.
+
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
 df_Russia$wo_gmp1 <- df_Russia$diff_conf - exp(gmp12_alpha * df_Russia$rownum + gmp12_beta) *
   cumsum(df_Russia$diff_conf)
@@ -616,6 +644,7 @@ text(x = as.numeric(Sys.Date() - df_Russia$date[1]) + step_x %/% 2,
      labels = paste0(Sys.Date(), ": ", df_Russia$diff_conf[nrow(df_Russia)]))
 ```
 
+Попробуем для данного ряда оценить параметры модели Гомперца тем же способом через функциональные координаты - анаморфозу модели Гомперца.
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
 plot(x = df_Russia$rownum, 
@@ -634,7 +663,14 @@ arrows(x0 = (log(-gmp12_2_alpha) - gmp12_2_beta) / gmp12_2_alpha,
        y1 = 0, col = "red")
 text(x = (log(-gmp12_2_alpha) - gmp12_2_beta) / gmp12_2_alpha, y = 0,
      labels = df_Russia$date[round((log(-gmp12_2_alpha) - gmp12_2_beta) / gmp12_2_alpha)])
+text(x = 10, y = log(-gmp12_2_alpha) - 0.25, 
+     labels = paste("ln(k) =", round(log(-gmp12_2_alpha), 2)))
+text(x = 400, y = -3, labels = paste("-k =", gmp12_2_alpha, "; b =", gmp12_2_beta))
+abline(v = seq(0, 600, 50), lty = 2, col = "grey", lwd = I(0.5))
+abline(h = seq(-10, 4, 1), lty = 2, col = "grey", lwd = I(0.5))
 ```
+
+Полученные параметры `r paste("-k =", gmp12_2_alpha, "; b =", gmp12_2_beta)` вернём обратно в модель Гомперца для построения теоретической кривой зависимости относительно реальных данных. Покажем на графике истинные значения заболеваемости без первой "волны" и теоретически полученную зависимость по дифференциальной модели.
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
 stl_model1 <- stl(ts(log(df_Russia$diff_conf[interval4]), frequency = 7), s.window = "periodic")
@@ -673,17 +709,45 @@ abline(v = seq(0, max(df_Russia$rownum) + predict_forward, step_x),
        lty = 2, lwd = I(0.5), col = "grey")
 ```
 
+На графике видим неоднозначную картину, что произошло ввиду большого количества значений до реализации модели. Вначале из-за флуктуаций, модель Гомперца вела себя похожим образом. Теоретическая зависимость своим правым скатом хорошо объяснила правый край реальных данных, который отвечает за современную динамику, чего не случилось с левым краем. Получаем идеальное объяснение при сдвиге теоретической кривой на 50 дней вперёд. Таким образом, точно показать зависимость по модели Гомперца для второй волны нам не удалось. Удалось показать поразительное объяснение кусочной зависимости ряда данных от времени прим помощи модели ограниченного роста. Как и с первой реализацией модели, получилось что через некоторое время модель теряет свою объясняющую силу и срывается вниз, когда реальная зависимость идёт в рост.
+
+Для точной перепроверки стоит проверить ещё вторую волну отдельно на своём интервале на соответствие модели Гомперца.
+
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
 gmp_diff2_it <- df_Russia$wo_gmp1[(date_max - period - 10):nrow(df_Russia)]
 gmp_diff2 <- gmp_diff2_it - min(gmp_diff2_it)
-plot(gmp_diff2, type = "o", pch = 19)
-```
+plot(y = gmp_diff2,
+     x = 1:length(gmp_diff2),
+     xlab = paste("Дни от", as.Date("2021-01-22") + 228),
+     ylab = "Заражения каждый день - 5000, чел",
+     main = "Вторая волна заражений в России",
+     type = "o", 
+     pch = 19,
+     cex = I(0.5),
+     lwd = I(0.5))
+abline(v = seq(0, 300, 25), lty = 2, col = "grey")
+abline(h = seq(0, 30000, 2500), lty = 2, col = "grey")
+``` 
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
-plot(log(gmp_diff2 / cumsum(gmp_diff2)))
+plot(log(gmp_diff2 / cumsum(gmp_diff2)),
+     cex = I(0.5), pch = 19, type = "p",
+     main = "График анаморфозы Гомперца",
+     ylab = "Значения натурального логарифма логарифмической производной",
+     xlab = paste("Дни от", as.Date("2021-01-22") + 228))
+abline(v = seq(0, 300, 25), lty = 2, col = "grey")
+abline(h = seq(-8, 2, 1), lty = 2, col = "grey")
 gmp_diff2_alpha <- -0.0222
 gmp_diff2_beta <- -1.44
-abline(a = gmp_diff2_beta, b = gmp_diff2_alpha)
+abline(a = gmp_diff2_beta, b = gmp_diff2_alpha, col = "red")
+abline(h = 0)
+abline(h = log(-gmp_diff2_alpha), col = "red")
+arrows(x0 = (log(-gmp_diff2_alpha) - gmp_diff2_beta) / gmp_diff2_alpha,
+       x1 = (log(-gmp_diff2_alpha) - gmp_diff2_beta) / gmp_diff2_alpha,
+       y0 = log(-gmp_diff2_alpha),
+       y1 = 0, col = "red")
+text(x = (log(-gmp_diff2_alpha) - gmp_diff2_beta) / gmp_diff2_alpha, y = 0,
+     labels = df_Russia$date[round((log(-gmp_diff2_alpha) - gmp_diff2_beta) / gmp_diff2_alpha)] + 228)
 ```
 
 ```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
@@ -996,207 +1060,207 @@ $$
 
 В случае, если $\lambda_{1, 2} \in \mathbb{С}$, то $\lambda_{1, 2} = \pm i \cdot \sqrt{ \left| \beta_{1} \right| \cdot \left| \beta_{2} \right|}$ - точка $(x_0, y_0)$ - центр на графике фазовой плоскости.
 
-## Моделирование системы дифференциальных уравнений
+<!-- ## Моделирование системы дифференциальных уравнений -->
 
-```{r, echo = F}
-LV <- function(time, x, parms) {
-  with(as.list(c(parms, x)), {
-  
-  dx1 <- x1 * (parms[1] - parms[2] * x2)
-  dx2 <- x2 * (parms[3] - parms[4] * x1)
- 
-  return(list(c(dx1, dx2)))
-  })
-}
+<!-- ```{r, echo = F} -->
+<!-- LV <- function(time, x, parms) { -->
+<!--   with(as.list(c(parms, x)), { -->
 
-  
-parameters <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
-ini_state <- c(x1 = -30.1, x2 = -0.4)
-times <- seq(0, 1000, 1)
+<!--   dx1 <- x1 * (parms[1] - parms[2] * x2) -->
+<!--   dx2 <- x2 * (parms[3] - parms[4] * x1) -->
 
-out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
-
-parameters2 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
-ini_state2 <- c(x1 = -30.1, x2 = -0.9)
-times2 <- seq(0, 1000, 1)
-out2 <- ode(func = LV, y = ini_state2, parms = parameters2, times = times2)
-
-parameters3 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
-ini_state3 <- c(x1 = -30.1, x2 = -1.4)
-times3 <- seq(0, 1000, 1)
-out3 <- ode(func = LV, y = ini_state3, parms = parameters3, times = times3)
-
-parameters4 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
-ini_state4 <- c(x1 = -30.1, x2 = -1.9)
-times4 <- seq(0, 1000, 1)
-
-out4 <- ode(func = LV, y = ini_state4, parms = parameters4, times = times4)
-
-parameters5 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
-ini_state5 <- c(x1 = -30.1, x2 = -2.4)
-times5 <- seq(0, 1000, 1)
-out5 <- ode(func = LV, y = ini_state5, parms = parameters5, times = times5)
-
-parameters6 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
-ini_state6 <- c(x1 = -30.1, x2 = -2.9)
-times6 <- seq(0, 1000, 1)
-out6 <- ode(func = LV, y = ini_state6, parms = parameters6, times = times6)
-```
-
-```{r, echo = F, dpi = 1024}
-plot(out[, 2], out[, 3], type = "l", ylim = c(-15, 0),
-     main = "Седловая точка процесса",
-     ylab = "y",
-     xlab = "x")
-lines(out2[, 2], out2[, 3])
-lines(out3[, 2], out3[, 3])
-lines(out4[, 2], out4[, 3])
-lines(out5[, 2], out5[, 3])
-lines(out6[, 2], out6[, 3])
-points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
-       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
-abline(h = seq(1, -31, -1), col = "grey", lty = 2)
-abline(v = seq(1, -31, -1), col = "grey", lty = 2)
-```
-
-```{r, echo = F}
-LV <- function(time, x, parms) {
-  with(as.list(c(parms, x)), {
-  
-  dx1 <- x1 * (parms[1] - parms[2] * x2)
-  dx2 <- x2 * (parms[3] - parms[4] * x1)
- 
-  return(list(c(dx1, dx2)))
-  })
-}
-
-  
-parameters <- c(b1 = 0.05, a1 = -0.0005, b2 = 0.025, a2 = 0.0007)
-ini_state <- c(x1 = -30.1, x2 = -0.4)
-times <- seq(0, 1000, 1)
-out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
-
-ini_state2 <- c(x1 = -30.1, x2 = -0.9)
-out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times)
-
-ini_state3 <- c(x1 = -30.1, x2 = -1.4)
-out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times)
-
-ini_state4 <- c(x1 = -30.1, x2 = -1.9)
-out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times)
-
-ini_state5 <- c(x1 = -30.1, x2 = -2.4)
-out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times)
-
-ini_state6 <- c(x1 = -30.1, x2 = -2.9)
-out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
-```
-
-```{r, echo = F, dpi = 1024}
-plot(out[, 2], out[, 3], type = "l", ylim = c(-1050, 0),
-     main = "Седловая точка процесса",
-     ylab = "y",
-     xlab = "x")
-lines(out2[, 2], out2[, 3])
-lines(out3[, 2], out3[, 3])
-lines(out4[, 2], out4[, 3])
-lines(out5[, 2], out5[, 3])
-lines(out6[, 2], out6[, 3])
-points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
-       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
-abline(h = seq(-1100, 100, 50), col = "grey", lty = 2)
-abline(v = seq(-300, 100, 20), col = "grey", lty = 2)
-```
+<!--   return(list(c(dx1, dx2))) -->
+<!--   }) -->
+<!-- } -->
 
 
-```{r, echo = F}
-LV <- function(time, x, parms) {
-  with(as.list(c(parms, x)), {
-  
-  dx1 <- x1 * (parms[1] - parms[2] * x2)
-  dx2 <- x2 * (parms[3] - parms[4] * x1)
- 
-  return(list(c(dx1, dx2)))
-  })
-}
+<!-- parameters <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007) -->
+<!-- ini_state <- c(x1 = -30.1, x2 = -0.4) -->
+<!-- times <- seq(0, 1000, 1) -->
 
-  
-parameters <- c(b1 = -1.5, a1 = -0.05, b2 = 2.5, a2 = 0.07)
-ini_state <- c(x1 = -1.1, x2 = -1.4)
-times <- seq(0, 200, 0.1)
-out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
+<!-- out <- ode(func = LV, y = ini_state, parms = parameters, times = times) -->
 
-ini_state2 <- c(x1 = 1.1, x2 = 1.4)
-out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times)
+<!-- parameters2 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007) -->
+<!-- ini_state2 <- c(x1 = -30.1, x2 = -0.9) -->
+<!-- times2 <- seq(0, 1000, 1) -->
+<!-- out2 <- ode(func = LV, y = ini_state2, parms = parameters2, times = times2) -->
 
-ini_state3 <- c(x1 = 1.1, x2 = 2.4)
-out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times)
+<!-- parameters3 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007) -->
+<!-- ini_state3 <- c(x1 = -30.1, x2 = -1.4) -->
+<!-- times3 <- seq(0, 1000, 1) -->
+<!-- out3 <- ode(func = LV, y = ini_state3, parms = parameters3, times = times3) -->
 
-ini_state4 <- c(x1 = 1.1, x2 = -1.4)
-out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times)
+<!-- parameters4 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007) -->
+<!-- ini_state4 <- c(x1 = -30.1, x2 = -1.9) -->
+<!-- times4 <- seq(0, 1000, 1) -->
 
-ini_state5 <- c(x1 = 1.1, x2 = -2.4)
-out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times)
+<!-- out4 <- ode(func = LV, y = ini_state4, parms = parameters4, times = times4) -->
 
-ini_state6 <- c(x1 = -1.1, x2 = -1.9)
-out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
-```
+<!-- parameters5 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007) -->
+<!-- ini_state5 <- c(x1 = -30.1, x2 = -2.4) -->
+<!-- times5 <- seq(0, 1000, 1) -->
+<!-- out5 <- ode(func = LV, y = ini_state5, parms = parameters5, times = times5) -->
 
-```{r, echo = F, dpi = 1024}
-plot(out[, 2], out[, 3], type = "l",
-     ylim = c(-50, 250),
-     xlim = c(-1, 10),
-     main = "Седловая точка процесса",
-     ylab = "y",
-     xlab = "x")
-lines(out2[, 2], out2[, 3])
-lines(out3[, 2], out3[, 3])
-lines(out4[, 2], out4[, 3])
-lines(out5[, 2], out5[, 3])
-lines(out6[, 2], out6[, 3])
-points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
-       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
-abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2)
-abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2)
-```
+<!-- parameters6 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007) -->
+<!-- ini_state6 <- c(x1 = -30.1, x2 = -2.9) -->
+<!-- times6 <- seq(0, 1000, 1) -->
+<!-- out6 <- ode(func = LV, y = ini_state6, parms = parameters6, times = times6) -->
+<!-- ``` -->
 
-```{r}
-parameters <- c(b1 = -1.5, a1 = -0.05, b2 = 2.5, a2 = 0.07)
-ini_state <- c(x1 = -1.1, x2 = -1.4)
-times <- seq(0, 200, 0.1)
-out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
+<!-- ```{r, echo = F, dpi = 1024} -->
+<!-- plot(out[, 2], out[, 3], type = "l", ylim = c(-15, 0), -->
+<!--      main = "Седловая точка процесса", -->
+<!--      ylab = "y", -->
+<!--      xlab = "x") -->
+<!-- lines(out2[, 2], out2[, 3]) -->
+<!-- lines(out3[, 2], out3[, 3]) -->
+<!-- lines(out4[, 2], out4[, 3]) -->
+<!-- lines(out5[, 2], out5[, 3]) -->
+<!-- lines(out6[, 2], out6[, 3]) -->
+<!-- points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), -->
+<!--        y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red") -->
+<!-- abline(h = seq(1, -31, -1), col = "grey", lty = 2) -->
+<!-- abline(v = seq(1, -31, -1), col = "grey", lty = 2) -->
+<!-- ``` -->
 
-ini_state2 <- c(x1 = 1.1, x2 = 1.4)
-out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times)
+<!-- ```{r, echo = F} -->
+<!-- LV <- function(time, x, parms) { -->
+<!--   with(as.list(c(parms, x)), { -->
 
-ini_state3 <- c(x1 = 1.1, x2 = 2.4)
-out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times)
+<!--   dx1 <- x1 * (parms[1] - parms[2] * x2) -->
+<!--   dx2 <- x2 * (parms[3] - parms[4] * x1) -->
 
-ini_state4 <- c(x1 = 1.1, x2 = -1.4)
-out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times)
+<!--   return(list(c(dx1, dx2))) -->
+<!--   }) -->
+<!-- } -->
 
-ini_state5 <- c(x1 = 1.1, x2 = -2.4)
-out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times)
 
-ini_state6 <- c(x1 = -1.1, x2 = -1.9)
-out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
+<!-- parameters <- c(b1 = 0.05, a1 = -0.0005, b2 = 0.025, a2 = 0.0007) -->
+<!-- ini_state <- c(x1 = -30.1, x2 = -0.4) -->
+<!-- times <- seq(0, 1000, 1) -->
+<!-- out <- ode(func = LV, y = ini_state, parms = parameters, times = times) -->
 
-plot(out[, 2], out[, 3], type = "l",
-     ylim = c(-50, 250),
-     xlim = c(-1, 10),
-     main = "Седловая точка процесса",
-     ylab = "y",
-     xlab = "x")
-lines(out2[, 2], out2[, 3])
-lines(out3[, 2], out3[, 3])
-lines(out4[, 2], out4[, 3])
-lines(out5[, 2], out5[, 3])
-lines(out6[, 2], out6[, 3])
-points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
-       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
-abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2)
-abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2)
-```
+<!-- ini_state2 <- c(x1 = -30.1, x2 = -0.9) -->
+<!-- out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times) -->
+
+<!-- ini_state3 <- c(x1 = -30.1, x2 = -1.4) -->
+<!-- out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times) -->
+
+<!-- ini_state4 <- c(x1 = -30.1, x2 = -1.9) -->
+<!-- out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times) -->
+
+<!-- ini_state5 <- c(x1 = -30.1, x2 = -2.4) -->
+<!-- out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times) -->
+
+<!-- ini_state6 <- c(x1 = -30.1, x2 = -2.9) -->
+<!-- out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times) -->
+<!-- ``` -->
+
+<!-- ```{r, echo = F, dpi = 1024} -->
+<!-- plot(out[, 2], out[, 3], type = "l", ylim = c(-1050, 0), -->
+<!--      main = "Седловая точка процесса", -->
+<!--      ylab = "y", -->
+<!--      xlab = "x") -->
+<!-- lines(out2[, 2], out2[, 3]) -->
+<!-- lines(out3[, 2], out3[, 3]) -->
+<!-- lines(out4[, 2], out4[, 3]) -->
+<!-- lines(out5[, 2], out5[, 3]) -->
+<!-- lines(out6[, 2], out6[, 3]) -->
+<!-- points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), -->
+<!--        y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red") -->
+<!-- abline(h = seq(-1100, 100, 50), col = "grey", lty = 2) -->
+<!-- abline(v = seq(-300, 100, 20), col = "grey", lty = 2) -->
+<!-- ``` -->
+
+
+<!-- ```{r, echo = F} -->
+<!-- LV <- function(time, x, parms) { -->
+<!--   with(as.list(c(parms, x)), { -->
+
+<!--   dx1 <- x1 * (parms[1] - parms[2] * x2) -->
+<!--   dx2 <- x2 * (parms[3] - parms[4] * x1) -->
+
+<!--   return(list(c(dx1, dx2))) -->
+<!--   }) -->
+<!-- } -->
+
+
+<!-- parameters <- c(b1 = -1.5, a1 = -0.05, b2 = 2.5, a2 = 0.07) -->
+<!-- ini_state <- c(x1 = -1.1, x2 = -1.4) -->
+<!-- times <- seq(0, 200, 0.1) -->
+<!-- out <- ode(func = LV, y = ini_state, parms = parameters, times = times) -->
+
+<!-- ini_state2 <- c(x1 = 1.1, x2 = 1.4) -->
+<!-- out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times) -->
+
+<!-- ini_state3 <- c(x1 = 1.1, x2 = 2.4) -->
+<!-- out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times) -->
+
+<!-- ini_state4 <- c(x1 = 1.1, x2 = -1.4) -->
+<!-- out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times) -->
+
+<!-- ini_state5 <- c(x1 = 1.1, x2 = -2.4) -->
+<!-- out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times) -->
+
+<!-- ini_state6 <- c(x1 = -1.1, x2 = -1.9) -->
+<!-- out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times) -->
+<!-- ``` -->
+
+<!-- ```{r, echo = F, dpi = 1024} -->
+<!-- plot(out[, 2], out[, 3], type = "l", -->
+<!--      ylim = c(-50, 250), -->
+<!--      xlim = c(-1, 10), -->
+<!--      main = "Седловая точка процесса", -->
+<!--      ylab = "y", -->
+<!--      xlab = "x") -->
+<!-- lines(out2[, 2], out2[, 3]) -->
+<!-- lines(out3[, 2], out3[, 3]) -->
+<!-- lines(out4[, 2], out4[, 3]) -->
+<!-- lines(out5[, 2], out5[, 3]) -->
+<!-- lines(out6[, 2], out6[, 3]) -->
+<!-- points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), -->
+<!--        y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red") -->
+<!-- abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2) -->
+<!-- abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- parameters <- c(b1 = -1.5, a1 = -0.05, b2 = 2.5, a2 = 0.07) -->
+<!-- ini_state <- c(x1 = -1.1, x2 = -1.4) -->
+<!-- times <- seq(0, 200, 0.1) -->
+<!-- out <- ode(func = LV, y = ini_state, parms = parameters, times = times) -->
+
+<!-- ini_state2 <- c(x1 = 1.1, x2 = 1.4) -->
+<!-- out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times) -->
+
+<!-- ini_state3 <- c(x1 = 1.1, x2 = 2.4) -->
+<!-- out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times) -->
+
+<!-- ini_state4 <- c(x1 = 1.1, x2 = -1.4) -->
+<!-- out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times) -->
+
+<!-- ini_state5 <- c(x1 = 1.1, x2 = -2.4) -->
+<!-- out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times) -->
+
+<!-- ini_state6 <- c(x1 = -1.1, x2 = -1.9) -->
+<!-- out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times) -->
+
+<!-- plot(out[, 2], out[, 3], type = "l", -->
+<!--      ylim = c(-50, 250), -->
+<!--      xlim = c(-1, 10), -->
+<!--      main = "Седловая точка процесса", -->
+<!--      ylab = "y", -->
+<!--      xlab = "x") -->
+<!-- lines(out2[, 2], out2[, 3]) -->
+<!-- lines(out3[, 2], out3[, 3]) -->
+<!-- lines(out4[, 2], out4[, 3]) -->
+<!-- lines(out5[, 2], out5[, 3]) -->
+<!-- lines(out6[, 2], out6[, 3]) -->
+<!-- points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), -->
+<!--        y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red") -->
+<!-- abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2) -->
+<!-- abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2) -->
+<!-- ``` -->
 
 
 ## Определение параметров дифференциальной модели
@@ -1490,4 +1554,16 @@ legend(x = 300, y = 7,
 
 # Список литературы
 
-1.  Charles Therrien, Murali Tummala. Probability and Random Processes for Electrical and Computer Engineers. — CRC Press, 2012. — P. 287
+  1.  Charles Therrien, Murali Tummala. Probability and Random Processes for Electrical and Computer Engineers. — CRC Press, 2012. — P. 287
+  2. Verhulst, P. F., (1838). Notice sur la loi que la population poursuit dans son accroissement. Correspondance mathématique et physique, 10, 113—121.
+  3. Verhulst, P. F., Recherches Mathématiques sur La Loi D’Accroissement de la Population, Nouveaux Mémoires de l’Académie Royale des Sciences et Belles-Lettres de Bruxelles, 18, Art. 1, 1—45, 1845 (Mathematical Researches into the Law of Population Growth Increase).
+  4. Pearl, Raymond. The Biology of Population Growth (англ.) // The American Mercury. — 1924. — Ноябрь (т. III, № 11). — С. 293– 305.
+  5. Pearl, Raymond and Lowell J. Reed. On the Rate of Growth of the Population of the United States since 1790 and its Mathematical Representation (англ.) // Proceedings of the National Academy of Sciences of the United States of America (PNAS; USA). — 1920. — 15 июня (т. 6, № 6). — С. 275–288.
+  6. Gompertz, B. "On the Nature of the Function Expressive of the Law of Human Mortality, and on a New Mode of Determining the Value of Life Contingencies." Phil. Trans. Roy. Soc. London 123, 513-585, 1832.
+  7. Hofbauer, Josef; Sigmund, Karl (1998). "Dynamical Systems and Lotka–Volterra Equations". Evolutionary Games and Population Dynamics. New York: Cambridge University Press. pp. 1–54. ISBN 0-521-62570-X.
+  8. Кузьмин В.И., Гадзаов А.Ф. Методы построения моделей по эмпирическим данным: Учебное пособие / Московский государственный институт радиотехники, электроники и автоматики (технический университет) – М., 2012. – 94 с.
+  9. Кузьмин В.И., Гадзаов А.Ф. Прикладные задачи математической статистики: Учебное пособие / Московский государственный институт радиотехники, электроники и автоматики (технический университет) – М., 2011. – 92 с.
+  10. Модели и методы определения параметров нелинейных процессов [Электронный ресурс]: монография / В. И. Кузьмин [и др.]. — М.: МИРЭА, 2016. — 148 с.. — Электрон. опт. диск (ISO) ISBN 978-5-600-01609-5
+  11. Модели и алгоритмы анализа нелинейных колебаний с трендом [Электронный ресурс]: монография / В. И. Кузьмин [и др.]. — М.: МИРЭА, 2015. — 94 с.. — Электрон. опт. диск (ISO) ISBN 978-5-7339-1109-9
+  12. Методы анализа данных [Электронный ресурс]: учебное пособие / В. И. Кузьмин, А. Ф. Гадзаов. — М.: РТУ МИРЭА, 2020. — Электрон. опт. диск (ISO)
+
