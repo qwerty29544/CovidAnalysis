@@ -231,6 +231,301 @@ df_deaths$date <- as.Date(df_deaths$date)
 df_deaths$World <- rowSums(df_deaths[, 3:ncol(df_deaths)])
 ```
 
+# Анализ данимики заболеваний Covid19 в России
+
+```{r, echo=F}
+df_Russia <- df_confirmed %>% dplyr::select(date, contains("Russia")) %>%
+  dplyr::mutate(diff_conf = c(0, diff(Russia.)), log_diff = log(diff_conf + 1), rownum = 1:nrow(df_confirmed))
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+predict_forward = 110
+period = 114
+date_max = which.max(df_Russia$diff_conf)
+step_y = 2500
+step_x = 50
+
+plot(x = df_Russia$rownum, y = df_Russia$diff_conf,
+     col = "black", type = "o", pch = 19, cex = I(0.8), lwd = I(0.5),
+     main = "График динамики заражений Covid19 в России",
+     xlab = paste0("Дни с даты ", df_Russia$date[1]),
+     ylab = "Прирост заболевших, чел",
+     xlim = c(0, max(df_Russia$rownum) + predict_forward))
+abline(v = date_max + period * (-3:2), col = "orange")
+text(x = date_max + period * (-3:2) - 20, y = 2500,
+     labels = c(df_Russia$date[date_max + period * (-2)] - period,
+                df_Russia$date[date_max + period * (-2:1)],
+                df_Russia$date[date_max + period] + period))
+abline(h = seq(0, max(df_Russia$diff_conf) + step_y, step_y), 
+       lty = 2, lwd = I(0.5), col = "grey")
+abline(v = seq(0, max(df_Russia$rownum) + predict_forward, step_x),
+       lty = 2, lwd = I(0.5), col = "grey")
+abline(v = as.numeric(Sys.Date() - df_Russia$date[1]), col = "red",
+       lty = 4, lwd = I(1.5))
+text(x = as.numeric(Sys.Date() - df_Russia$date[1]) + step_x %/% 2, 
+     y = df_Russia$diff_conf[nrow(df_Russia)] - step_y %/% 2,
+     labels = paste0(Sys.Date(), ": ", df_Russia$diff_conf[nrow(df_Russia)]))
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+max_lag <- 100
+acf_Rus_conf <- acf(x = diff(df_Russia$diff_conf), 
+                    lag.max = max_lag, demean = TRUE, plot = FALSE)
+plot(x = acf_Rus_conf$lag, y = acf_Rus_conf$acf,
+     type = "o", pch = 19, col = "red3", cex = I(0.8),
+     main = "График автокореляций для прироста заболевших",
+     xlab = "Лаги по времени, дни",
+     ylab = "Автокорреляции ряда",
+     xaxt = "n")
+abline(v = 7 * (1:20), col = "blue2", lty = 3, lwd = I(0.5))
+abline(h = c(-1:1) * 1.96 * (1 / sqrt(nrow(df_Russia))),
+       lty = 2, lwd = I(0.5))
+axis(1, seq(0, max_lag, 7))
+abline(h = seq(0, 1, 0.1), col = "grey", lty = 2, lwd = I(0.5))
+```
+
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+MariaRemark.Alter_Johns <- function(ts, p = 1) {
+  lents <- length(ts)
+  a <- numeric(length = lents - 1)
+  for (i in 1:(lents-1)) {
+    a[i] <- 1/(lents - i) * sum(abs(ts[1:(lents - i)] - ts[(1 + i):lents])^(p))^(1/p)
+  }
+  return(a)
+}
+
+at_diff_Russ_p2 <- MariaRemark.Alter_Johns(diff(df_Russia$diff_conf), p = 2)
+
+plot(at_diff_Russ_p2,
+     type = "o", col = "red2", pch = 19, cex = I(0.8),
+     xlim = c(0, max_lag), ylim = c(min(at_diff_Russ_p2[1:max_lag]),
+                                    max(at_diff_Russ_p2[1:max_lag])),
+     main = "График функции Альтера-Джонса для p = 2",
+     xlab = "Лаги по времени, дни",
+     ylab = "Значения функции Альтера-Джонса",
+     xaxt = "n")
+abline(v = 7 * (1:20), col = "blue2", lty = 3, lwd = I(0.5))
+axis(1, seq(0, max_lag, 7))
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+interval1 <- 1:(date_max - 2 * period - 1)
+interval2 <- (date_max - 2 * period):(date_max - period - 1)
+interval3 <- (date_max - period):(date_max - 1)
+interval4 <- (date_max):(date_max + period - 1)
+
+plot(x = df_Russia$date[c(interval1, interval2)],
+     y = df_Russia$diff_conf[c(interval1, interval2)], type = "o", pch = 19,
+     xlab = paste("Даты со дня", df_Russia$date[1]),
+     ylab = "Прирост заражений, чел",
+     main = "Совмещённый график двух пиков",
+     xlim = c(df_Russia$date[1], df_Russia$date[length(c(interval3, interval4))]),
+     ylim = c(0, max(df_Russia$diff_conf[c(interval1, interval2)])))
+abline(v = df_Russia$date[which.max(df_Russia$diff_conf[c(interval1, interval2)])], col = "red")
+text(x = df_Russia$date[which.max(df_Russia$diff_conf[c(interval1, interval2)])] + 10,
+     y = max(df_Russia$diff_conf[c(interval1, interval2)]) / 3,
+     labels = df_Russia$date[which.max(df_Russia$diff_conf[c(interval1, interval2)])])
+abline(h = max(df_Russia$diff_conf[c(interval1, interval2)])/1.44, col = "blue")
+abline(v = df_Russia$date[which.max(df_Russia$diff_conf[c(interval1, interval2)])] + 36)
+text(x = df_Russia$date[which.max(df_Russia$diff_conf[c(interval1, interval2)])] + 36 + 10,
+     y = max(df_Russia$diff_conf[c(interval1, interval2)]) / 3,
+     labels = df_Russia$date[which.max(df_Russia$diff_conf[c(interval1, interval2)])] + 36)
+lines(x =  df_Russia$date[c(interval3, interval4)] - (max(df_Russia$date[c(interval1, interval2)]) - min(df_Russia$date[c(interval1, interval2)])),
+      y = df_Russia$diff_conf[c(interval3, interval4)] / max(df_Russia$diff_conf) * max(df_Russia$diff_conf[c(interval1, interval2)]),
+      lty = 2, col = "grey4")
+abline(h = max(df_Russia$diff_conf[c(interval1, interval2)]), col = "blue")
+text(x = df_Russia$date[3], y = max(df_Russia$diff_conf[c(interval1, interval2)]), 
+     labels = max(df_Russia$diff_conf[c(interval1, interval2)]))
+text(x = df_Russia$date[3], y = max(df_Russia$diff_conf[c(interval1, interval2)]) / 1.44, 
+     labels = round(max(df_Russia$diff_conf[c(interval1, interval2)]) / 1.44))
+```
+
+36 дней
+
+1.44 раза
+
+114 дней интервал
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+diff_russia12_y <- df_Russia$diff_conf[c(interval1, interval2)]
+diff_russia12_x <- c(interval1, interval2)
+gmp12_y <- log(diff_russia12_y/cumsum(diff_russia12_y))
+
+plot(x = diff_russia12_x,
+     y = gmp12_y,
+     type = "o",
+     pch = 19,
+     cex = I(0.8),
+     main = "Анаморфоза Гомперца ln(y_dot / y) ~ t на первом интервале в 228 дней",
+     ylab = "Значения анаморфозы Гомперца",
+     xlab = paste("Дни с", df_Russia$date[1]))
+gmp12_alpha = -0.033  # Угол наклона модели Гомперца на анаморфозе Гомперца
+gmp12_beta = 0.67      # Пересечение с 0 в анаморфозе Гомперца
+abline(a = gmp12_beta, b = gmp12_alpha)
+abline(h = log(-gmp12_alpha))
+arrows(x0 = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha,
+       x1 = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha,
+       y0 = log(-gmp12_alpha),
+       y1 = 0)
+text(x = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha, y = 0,
+     labels = df_Russia$date[round((log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha)])
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+plot(x = diff_russia12_x, y = diff_russia12_y,
+     col = "black", type = "o", pch = 19,
+     main = "Модель Гомперца на основе первого интервала",
+     xlab = paste("Дни с", df_Russia$date[1]),
+     ylab = "Приросты числа заболевших, чел")
+lines(x = diff_russia12_x,
+      y = exp(gmp12_alpha * diff_russia12_x + gmp12_beta) *
+        cumsum(diff_russia12_y), col = "red")
+abline(v = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha, col = "red")
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+plot(x = df_Russia$rownum, y = df_Russia$diff_conf,
+     col = "black", type = "o", pch = 19, cex = I(0.8), lwd = I(0.5),
+     main = "График динамики заражений Covid19 в России",
+     xlab = paste0("Дни с даты ", df_Russia$date[1]),
+     ylab = "Прирост заболевших, чел",
+     xlim = c(0, max(df_Russia$rownum) + predict_forward))
+abline(v = date_max + period * (-3:2), col = "orange")
+text(x = date_max + period * (-3:2) - 20, y = 2500,
+     labels = c(df_Russia$date[date_max + period * (-2)] - period,
+                df_Russia$date[date_max + period * (-2:1)],
+                df_Russia$date[date_max + period] + period))
+abline(h = seq(0, max(df_Russia$diff_conf) + step_y, step_y), 
+       lty = 2, lwd = I(0.5), col = "grey")
+abline(v = seq(0, max(df_Russia$rownum) + predict_forward, step_x),
+       lty = 2, lwd = I(0.5), col = "grey")
+abline(v = as.numeric(Sys.Date() - df_Russia$date[1]), col = "red",
+       lty = 4, lwd = I(1.5))
+text(x = as.numeric(Sys.Date() - df_Russia$date[1]) + step_x %/% 2, 
+     y = df_Russia$diff_conf[nrow(df_Russia)] - step_y %/% 2,
+     labels = paste0(Sys.Date(), ": ", df_Russia$diff_conf[nrow(df_Russia)]))
+lines(x = df_Russia$rownum,
+      y = exp(gmp12_alpha * df_Russia$rownum + gmp12_beta) *
+        cumsum(df_Russia$diff_conf), col = "red")
+abline(v = (log(-gmp12_alpha) - gmp12_beta) / gmp12_alpha, col = "red")
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024}
+df_Russia$wo_gmp1 <- df_Russia$diff_conf - exp(gmp12_alpha * df_Russia$rownum + gmp12_beta) *
+  cumsum(df_Russia$diff_conf)
+
+plot(x = df_Russia$rownum, y = df_Russia$wo_gmp1,
+     col = "black", type = "o", pch = 19, cex = I(0.8), lwd = I(0.5),
+     main = "График динамики заражений Covid19 в России",
+     xlab = paste0("Дни с даты ", df_Russia$date[1]),
+     ylab = "Прирост заболевших, чел",
+     xlim = c(0, max(df_Russia$rownum) + predict_forward))
+abline(v = date_max + period * (-3:2), col = "orange")
+text(x = date_max + period * (-3:2) - 20, y = 2500,
+     labels = c(df_Russia$date[date_max + period * (-2)] - period,
+                df_Russia$date[date_max + period * (-2:1)],
+                df_Russia$date[date_max + period] + period))
+abline(h = seq(0, max(df_Russia$diff_conf) + step_y, step_y), 
+       lty = 2, lwd = I(0.5), col = "grey")
+abline(v = seq(0, max(df_Russia$rownum) + predict_forward, step_x),
+       lty = 2, lwd = I(0.5), col = "grey")
+abline(v = as.numeric(Sys.Date() - df_Russia$date[1]), col = "red",
+       lty = 4, lwd = I(1.5))
+text(x = as.numeric(Sys.Date() - df_Russia$date[1]) + step_x %/% 2, 
+     y = df_Russia$diff_conf[nrow(df_Russia)] - step_y %/% 1.5,
+     labels = paste0(Sys.Date(), ": ", df_Russia$diff_conf[nrow(df_Russia)]))
+```
+
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
+plot(x = df_Russia$rownum, 
+     y = log(df_Russia$wo_gmp1 / cumsum(df_Russia$wo_gmp1)),
+     main = "Анаморфоза Гомперца для всего полученного интервала",
+     ylab = "Значения анаморфозы Гомперца",
+     xlab = paste("Дни с", df_Russia$date[1]))
+abline(h = 0, lty = 2)
+gmp12_2_alpha <- -0.021
+gmp12_2_beta <- 2.8
+abline(a = gmp12_2_beta, b = gmp12_2_alpha, col = "red")
+abline(h = log(-gmp12_2_alpha), col = "red")
+arrows(x0 = (log(-gmp12_2_alpha) - gmp12_2_beta) / gmp12_2_alpha,
+       x1 = (log(-gmp12_2_alpha) - gmp12_2_beta) / gmp12_2_alpha,
+       y0 = log(-gmp12_2_alpha),
+       y1 = 0, col = "red")
+text(x = (log(-gmp12_2_alpha) - gmp12_2_beta) / gmp12_2_alpha, y = 0,
+     labels = df_Russia$date[round((log(-gmp12_2_alpha) - gmp12_2_beta) / gmp12_2_alpha)])
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
+stl_model1 <- stl(ts(log(df_Russia$diff_conf[interval4]), frequency = 7), s.window = "periodic")
+stl_matrix1 <- as.matrix(stl_model1$time.series)
+
+plot(x = df_Russia$rownum, y = df_Russia$wo_gmp1,
+     col = "black", type = "o", pch = 19, cex = I(0.8), lwd = I(0.5),
+     main = "График динамики заражений Covid19 в России",
+     xlab = paste0("Дни с даты ", df_Russia$date[1]),
+     ylab = "Прирост заболевших, чел",
+     xlim = c(0, max(df_Russia$rownum) + predict_forward))
+abline(v = date_max + period * (-3:2), col = "orange")
+text(x = date_max + period * (-3:2) - 20, y = 2500,
+     labels = c(df_Russia$date[date_max + period * (-2)] - period,
+                df_Russia$date[date_max + period * (-2:1)],
+                df_Russia$date[date_max + period] + period))
+lines(x = df_Russia$rownum,
+      y = exp(gmp12_2_alpha * df_Russia$rownum + gmp12_2_beta) *
+        cumsum(df_Russia$wo_gmp1), col = "purple")
+lines(x = df_Russia$rownum + 50,
+      y = exp(gmp12_2_alpha * df_Russia$rownum + gmp12_2_beta) *
+        cumsum(df_Russia$wo_gmp1), col = "blue")
+abline(h = min(df_Russia$diff_conf[interval4]) * c(1, exp(1)), lty = 2, col = "red")
+text(x = df_Russia$rownum[max(interval4)],
+     y = min(df_Russia$diff_conf[interval4]) * c(1, exp(1)) - 700,
+     labels = round(min(df_Russia$diff_conf[interval4]) * c(1, exp(1))) - 700)
+abline(h = max(df_Russia$diff_conf), col = "red", lty = 2)
+text(x = which.max(df_Russia$diff_conf) + 26, y = max(df_Russia$diff_conf) - 700,
+     labels = max(df_Russia$diff_conf))
+abline(v = c(df_Russia$rownum[max(interval3)],
+             df_Russia$rownum[max(interval3)] + 36),
+       col = "red", lty = 2)
+abline(h = seq(0, max(df_Russia$diff_conf) + step_y, step_y), 
+       lty = 2, lwd = I(0.5), col = "grey")
+abline(v = seq(0, max(df_Russia$rownum) + predict_forward, step_x),
+       lty = 2, lwd = I(0.5), col = "grey")
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
+gmp_diff2_it <- df_Russia$wo_gmp1[(date_max - period - 10):nrow(df_Russia)]
+gmp_diff2 <- gmp_diff2_it - min(gmp_diff2_it)
+plot(gmp_diff2, type = "o", pch = 19)
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
+plot(log(gmp_diff2 / cumsum(gmp_diff2)))
+gmp_diff2_alpha <- -0.0222
+gmp_diff2_beta <- -1.44
+abline(a = gmp_diff2_beta, b = gmp_diff2_alpha)
+```
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
+gmp_diff2_approx <- exp(gmp_diff2_alpha * 1:length(gmp_diff2) + gmp_diff2_beta) * cumsum(gmp_diff2)
+plot(gmp_diff2, type = "o", pch = 19)
+lines(x = 1:length(gmp_diff2_it), y = gmp_diff2_approx)
+```
+
+
+```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
+plot(y = gmp_diff2 / cumsum(gmp_diff2),
+     x = log(cumsum(gmp_diff2)),
+     ylim = c(0, 0.1), xlim = c(11, 15.5), cex = I(0.6), pch = 19)
+a <- -0.02
+b <-  0.29876
+abline(col = "red",
+       a = b, b = a)
+abline(h = 0, col = "red")
+abline(v = -b / a, col = "red")
+```
+
 
 # Анализ парных движений на фазовых плоскостях
 
@@ -243,7 +538,7 @@ df_deaths$World <- rowSums(df_deaths[, 3:ncol(df_deaths)])
 В качестве примера возьмём две страны с открытыми туристическими границами - Египет и Беларусь.
 
 
-```{r Egypt_Belarus graphics, out.height=800, out.width=800, echo = F, dpi = 512}
+```{r Egypt_Belarus graphics, out.height=800, out.width=800, echo = F, dpi = 1024}
 time_series_Egypt <- select(df_confirmed, contains("Egypt"))[, ]
 time_series_Belarus <- select(df_confirmed, contains("Belarus"))[, ]
 
@@ -722,7 +1017,9 @@ plot(x = cumsum(c(0, log(diff(time_series_Belarus) + 1))),
      xlim = c(250, 2800),
      xlab = "Belarus",
      ylab = "dEgypt_dt / Egypt",
-     main = "X накопленные значения")
+     main = "X накопленные значения", 
+     pch = 19, 
+     cex = I(0.5))
 
 alpha_X_red <- -0.000028
 beta_X_red <- 0.028
@@ -746,7 +1043,9 @@ plot(x = cumsum(c(0, log(diff(time_series_Egypt) + 1))),
      xlim = c(250, 2800),
      xlab = "Egypt",
      ylab = "dBelarus_dt / Belarus",
-     main = "Y накопленные значения")
+     main = "Y накопленные значения", 
+     pch = 19, 
+     cex = I(0.5))
 
 alpha_Y_red <- -0.000028
 beta_Y_red <- 0.028
@@ -837,7 +1136,7 @@ abline(a = 0.055, b = 0.4, col = "red", lty = 2)
 ```
 
 
-```{r, echo = F, dpi = 512}
+```{r, echo = F, dpi = 1024}
 df_model <- data.frame(Y = diff(S_x_dx), X = (1:length(diff(S_x_dx))))
 model_lm_sx <- lm(Y ~ X, data = df_model)
 
@@ -865,7 +1164,7 @@ legend(x = 300, y = 2,
 
 
 
-```{r}
+```{r, echo = F, dpi = 1024}
 df_model2 <- data.frame(Y = diff(S_y_dy), X = (1:length(diff(S_y_dy))))
 model_lm_sy <- lm(Y ~ X, data = df_model2)
 
@@ -891,21 +1190,12 @@ legend(x = 300, y = 4,
 ```
 
 
-```{r}
+```{r, echo = F, dpi = 1024}
 df1 <- select(df_confirmed, contains("Egypt"))[, ]
 df2 <- select(df_confirmed, contains("Russia"))[, ]
 ```
 
-```{r}
-plot(log(diff(df1)))
-plot(log(diff(df2)))
-
-plot(log(diff(df1)), ylim = c(3, 11))
-lines(log(diff(df2)))
-```
-
-
-```{r}
+```{r, echo = F, dpi = 1024}
 S_x = cumsum(c(0, log(diff(df1) + 1)))
 S_y = cumsum(c(0, log(diff(df2) + 1)))
 
@@ -913,27 +1203,67 @@ S_x_dx <- S_x * (beta_X_blue - alpha_X_blue * S_y)
 S_y_dy <- S_y * (beta_Y_green - alpha_Y_green * S_x)
 ```
 
+```{r, echo = F, dpi = 1024}
+plot(diff(S_y_dy), col = "red", type = "o", cex = I(0.5), pch = 19, lwd = I(0.5))
+lines(diff(S_x_dx), col = "blue", type = "o", cex = I(0.5), pch = 19, lwd = I(0.5))
+```
+
+```{r, echo = F, dpi = 1024}
+plot(x = diff(S_x_dx), y = diff(S_y_dy), 
+     type = "p", pch = 19, 
+     cex = I(0.7), col = "blue3",
+     main = "Оценка сепаратрис седловой точки фазовой плоскости",
+     ylab = "Belarus модельная заболеваемость",
+     xlab = "Egypt модельная заболеваемость")
+abline(a = 0.055, b = 2.1, col = "red", lty = 2)
+abline(a = 0.09, b = 0.4, col = "red", lty = 2)
+```
+
+```{r, echo = F, dpi = 1024}
+df_model <- data.frame(Y = diff(S_x_dx), X = (1:length(diff(S_x_dx))))
+model_lm_sx <- lm(Y ~ X, data = df_model)
+
+df_real <- data.frame(Y = log(diff(time_series_Egypt) + 1), 
+                      X = (1:length(diff(time_series_Egypt) + 1)))
+model_Egypt <- lm(Y ~ X, data = df_real)
+
+plot(((diff(S_x_dx) - model_lm_sx$coefficients[1] - 1:length(diff(S_x_dx)) * model_lm_sx$coefficients[2]) * (165) + 
+        model_Egypt$coefficients[1] + model_Egypt$coefficients[2] * (1:length(diff(time_series_Egypt)))), 
+     col = "blue", type =  "o", cex = I(0.5), lwd = I(0.5), pch = 19,
+     main = "Сравнение моделируемой динамики процесса и исходной",
+     ylab = "Полулогарифм динамики процесса",
+     xlab = paste("Дни с", df_confirmed$date[1]))
+lines(log(diff(time_series_Egypt)), 
+      col = "red", lwd = I(0.5), type = "o", pch = 19, cex = I(0.5))
+abline(h = seq(0, 9, 0.5), lwd = I(0.5), lty = 2, col = "grey")
+abline(v = seq(0, length(time_series_Egypt) + 10, 25), lwd = I(0.5), lty = 2, col = "grey")
+abline(v = maxes_Egypt, col = "orange2")
+legend(x = 300, y = 2,
+       legend = c("LN приросты Египет", "LN приросты модель"),
+       col = c("red", "blue"), lty = c(1, 1), pch = c(19, 19))
+```
 
 ```{r}
-a <- 0.005
-b <- 0
+df_model2 <- data.frame(Y = diff(S_y_dy), X = (1:length(diff(S_y_dy))))
+model_lm_sy <- lm(Y ~ X, data = df_model2)
 
-plot((diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5, 
-     type = "o",
-     pch = 19, 
-     lwd = I(0.5),
-     cex = I(0.5),
-     col = "red",
-     ylim = c(1, 9))
-lines(((diff(S_y_dy) + 0.0165) * 100) - 4 - 1.3 * 10e-03 * 1:length(diff(S_y_dy)) + 5.5,
-      type = "o",
-      pch = 19,
-      lwd = I(0.5),
-      cex = I(0.5),
-      col = "blue")
+df_real2 <- data.frame(Y = log(diff(df2) + 1), 
+                      X = (1:length(diff(df2) + 1)))
+model_Bel <- lm(Y ~ X, data = df_real2)
 
-plot(x = (diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5, 
-     y = ((diff(S_y_dy) + 0.0165) * 100) - 4 - 1.3 * 10e-03 * 1:length(diff(S_y_dy)) + 5.5,
-     xlim = c(1, 5),
-     ylim = c(6, 7.5))
+plot(((diff(S_y_dy) - model_lm_sy$coefficients[1] - 1:length(diff(S_y_dy)) * model_lm_sy$coefficients[2]) * (105) + 
+        model_Bel$coefficients[1] + model_Bel$coefficients[2] * (1:length(diff(df2)))), 
+     col = "blue", type =  "o", cex = I(0.5), lwd = I(0.5), pch = 19,
+     main = "Сравнение моделируемой динамики процесса и исходной",
+     ylab = "Полулогарифм динамики процесса",
+     xlab = paste("Дни с", df_confirmed$date[1]),
+     ylim = c(6, 11))
+lines(log(diff(df2)), 
+      col = "red", lwd = I(0.5), type = "o", pch = 19, cex = I(0.5))
+abline(h = seq(0, 12, 0.5), lwd = I(0.5), lty = 2, col = "grey")
+abline(v = seq(0, 600, 50), lwd = I(0.5), lty = 2, col = "grey")
+legend(x = 300, y = 7,
+       legend = c("LN приросты Россия", "LN приросты модель"),
+       col = c("red", "blue"), lty = c(1, 1), pch = c(19, 19))
 ```
+

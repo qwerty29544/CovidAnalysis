@@ -338,8 +338,9 @@ lines(x = 1:length(gmp_diff2_it), y = gmp_diff2_approx)
 
 
 # Анаморфоза для поиска y_inf ---------------------------------------------
-plot(y = gmp_diff2 / cumsum(gmp_diff2), x = log(cumsum(gmp_diff2)),
-     ylim = c(0, 0.2), xlim = c(8, 17), cex = I(0.6), pch = 19)
+plot(y = gmp_diff2 / cumsum(gmp_diff2),
+     x = log(cumsum(gmp_diff2)),
+     ylim = c(0, 0.1), xlim = c(10, 17), cex = I(0.6), pch = 19)
 a <- -0.02
 b <-  0.29876
 abline(col = "red",

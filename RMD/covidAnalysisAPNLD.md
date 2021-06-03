@@ -12,6 +12,47 @@ output:
 
 
 
+# Анализ данимики заболеваний Covid19 в России
+
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-2-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-3-1.png){width=800 height=800}
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-4-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-5-1.png){width=800 height=800}
+
+36 дней
+
+1.44 раза
+
+114 дней интервал
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-6-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-7-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-8-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-9-1.png){width=800 height=800}
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-10-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-11-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-12-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-13-1.png){width=800 height=800}
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-1.png){width=800 height=800}
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-15-1.png){width=800 height=800}
+
 
 # Анализ парных движений на фазовых плоскостях
 
@@ -38,19 +79,19 @@ output:
 
 Для завершения исследования парного развития процесса заболеваемости в двух странах необходимо провести анализ динамики на фазовой плоскости динамик процессов. Произведём построение графика с осью ординат - заболеваемостью в Египте, и осью абсцисс - заболеваемостью в Беларуси:
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-1-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-1.png)<!-- -->
 
 На фазовой плоскости динамики двух процессов наблюдаем замкнутый контур завершённого полного такта взаимодействия двух процессов, после которого последовало продолжение огибающего контура в правой части графика. Наблюдаем такую же структурную навивку с отклонениями недельных колебаний в сторону исходной эллипсовой кривой такта взаимодействия двух процессов (выделено синими штрихами).
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-2-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-17-1.png)<!-- -->
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-3-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-18-1.png)<!-- -->
 
 Хорошим тестом для проверки как лага по времени отставания двух процессов друг относительно друга так и зависимости между ними с точки зрения системы дифференциальных уравнений может оказаться смещение на лаг отставания процесса друг относительно друга в сторону постановки "процесса под процесс" так, чтобы такты двух процессов оказались синхронизированными. В таком случае при подобном смещении на графике фазовой плоскости будут образовываться прямолинейные зависимости, обозначающие высокую степень корреляции двух процессов во времени.
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-4-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-19-1.png)<!-- -->
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-5-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-20-1.png)<!-- -->
 
 Таким образом, так же на качественном уровне нами было получено заключение о высокой корреляции процессов после смещения их друг относительно друга на такт запаздывания.
 
@@ -169,8 +210,16 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-7-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-22-1.png)<!-- -->
 
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-24-1.png)<!-- -->
+
+
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-26-1.png)<!-- -->
 
 ## Определение параметров дифференциальной модели
 
@@ -198,10 +247,10 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-8-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-27-1.png)<!-- -->
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-9-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-28-1.png)<!-- -->
 
  
 **Модель "красной" линии**
@@ -248,13 +297,13 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-11-1.png){width=1000 height=1000}
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-30-1.png){width=1000 height=1000}
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-12-1.png){width=1000 height=1000}
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-31-1.png){width=1000 height=1000}
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-13-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-32-1.png)<!-- -->
 
 
 
@@ -285,7 +334,7 @@ legend(x = 300, y = 4,
        col = c("red", "blue"), lty = c(1, 1), pch = c(19, 19))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-33-1.png)<!-- -->
 
 
 
@@ -299,20 +348,20 @@ df2 <- select(df_confirmed, contains("Russia"))[, ]
 plot(log(diff(df1)))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-35-1.png)<!-- -->
 
 ```r
 plot(log(diff(df2)))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-2.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-35-2.png)<!-- -->
 
 ```r
 plot(log(diff(df1)), ylim = c(3, 11))
 lines(log(diff(df2)))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-3.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-35-3.png)<!-- -->
 
 
 
@@ -345,7 +394,7 @@ lines(((diff(S_y_dy) + 0.0165) * 100) - 4 - 1.3 * 10e-03 * 1:length(diff(S_y_dy)
       col = "blue")
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-18-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-37-1.png)<!-- -->
 
 ```r
 plot(x = (diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5, 
@@ -354,4 +403,4 @@ plot(x = (diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5,
      ylim = c(6, 7.5))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-18-2.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-37-2.png)<!-- -->
