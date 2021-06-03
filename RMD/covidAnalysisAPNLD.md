@@ -165,6 +165,13 @@ $$
 
 В случае, если $\lambda_{1, 2} \in \mathbb{С}$, то $\lambda_{1, 2} = \pm i \cdot \sqrt{ \left| \beta_{1} \right| \cdot \left| \beta_{2} \right|}$ - точка $(x_0, y_0)$ - центр на графике фазовой плоскости.
 
+## Моделирование системы дифференциальных уравнений
+
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-7-1.png)<!-- -->
+
+
 ## Определение параметров дифференциальной модели
 
 Тогда, система анаморфоз для определения параметров данной системы взаимодействия выглядит следующим образом:
@@ -191,10 +198,10 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-6-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-8-1.png)<!-- -->
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-7-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-9-1.png)<!-- -->
 
  
 **Модель "красной" линии**
@@ -241,13 +248,13 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-9-1.png){width=1000 height=1000}
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-11-1.png){width=1000 height=1000}
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-10-1.png){width=1000 height=1000}
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-12-1.png){width=1000 height=1000}
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-11-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-13-1.png)<!-- -->
 
 
 
@@ -278,7 +285,7 @@ legend(x = 300, y = 4,
        col = c("red", "blue"), lty = c(1, 1), pch = c(19, 19))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-12-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-1.png)<!-- -->
 
 
 
@@ -292,20 +299,20 @@ df2 <- select(df_confirmed, contains("Russia"))[, ]
 plot(log(diff(df1)))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-1.png)<!-- -->
 
 ```r
 plot(log(diff(df2)))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-2.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-2.png)<!-- -->
 
 ```r
 plot(log(diff(df1)), ylim = c(3, 11))
 lines(log(diff(df2)))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-3.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-3.png)<!-- -->
 
 
 
@@ -338,7 +345,7 @@ lines(((diff(S_y_dy) + 0.0165) * 100) - 4 - 1.3 * 10e-03 * 1:length(diff(S_y_dy)
       col = "blue")
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-18-1.png)<!-- -->
 
 ```r
 plot(x = (diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5, 
@@ -347,4 +354,4 @@ plot(x = (diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5,
      ylim = c(6, 7.5))
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-2.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-18-2.png)<!-- -->

@@ -16,7 +16,7 @@ output:
 libraries = c("tidyverse", "openxlsx",
               "dplyr", "tidyr", "stringr",
               "ggplot2", "forecast",
-              "openxlsx", "quantreg")
+              "openxlsx", "quantreg", "deSolve")
 
 #' Downloading and installing packages in R session
 #'
@@ -51,6 +51,7 @@ library(dplyr)    # Обработка фреймов
 library(tidyr)    # Пакет для приведения данных в порядок
 library(stringr)  # Пакет для обработки строк
 library(openxlsx) # Пакет для экспорта данных в xlsx
+library(deSolve)
 
 # Загрузка данных ---------------------------------------------------------
 df <- read.csv(file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
@@ -520,6 +521,170 @@ $$
 В случае, если $\lambda_{1, 2} \in \mathbb{R}$, то $\lambda_{1} > 0$ и $\lambda_{2} < 0$ - точка $(x_0, y_0)$ - седлоузел на графике фазовой плоскости.
 
 В случае, если $\lambda_{1, 2} \in \mathbb{С}$, то $\lambda_{1, 2} = \pm i \cdot \sqrt{ \left| \beta_{1} \right| \cdot \left| \beta_{2} \right|}$ - точка $(x_0, y_0)$ - центр на графике фазовой плоскости.
+
+## Моделирование системы дифференциальных уравнений
+
+```{r, echo = F}
+LV <- function(time, x, parms) {
+  with(as.list(c(parms, x)), {
+  
+  dx1 <- x1 * (parms[1] - parms[2] * x2)
+  dx2 <- x2 * (parms[3] - parms[4] * x1)
+ 
+  return(list(c(dx1, dx2)))
+  })
+}
+
+  
+parameters <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
+ini_state <- c(x1 = -30.1, x2 = -0.4)
+times <- seq(0, 1000, 1)
+
+out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
+
+parameters2 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
+ini_state2 <- c(x1 = -30.1, x2 = -0.9)
+times2 <- seq(0, 1000, 1)
+out2 <- ode(func = LV, y = ini_state2, parms = parameters2, times = times2)
+
+parameters3 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
+ini_state3 <- c(x1 = -30.1, x2 = -1.4)
+times3 <- seq(0, 1000, 1)
+out3 <- ode(func = LV, y = ini_state3, parms = parameters3, times = times3)
+
+parameters4 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
+ini_state4 <- c(x1 = -30.1, x2 = -1.9)
+times4 <- seq(0, 1000, 1)
+
+out4 <- ode(func = LV, y = ini_state4, parms = parameters4, times = times4)
+
+parameters5 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
+ini_state5 <- c(x1 = -30.1, x2 = -2.4)
+times5 <- seq(0, 1000, 1)
+out5 <- ode(func = LV, y = ini_state5, parms = parameters5, times = times5)
+
+parameters6 <- c(b1 = -0.005, a1 = -0.0005, b2 = -0.0025, a2 = 0.0007)
+ini_state6 <- c(x1 = -30.1, x2 = -2.9)
+times6 <- seq(0, 1000, 1)
+out6 <- ode(func = LV, y = ini_state6, parms = parameters6, times = times6)
+```
+
+```{r, echo = F, dpi = 512}
+plot(out[, 2], out[, 3], type = "l", ylim = c(-15, 0),
+     main = "Седловая точка процесса",
+     ylab = "y",
+     xlab = "x")
+lines(out2[, 2], out2[, 3])
+lines(out3[, 2], out3[, 3])
+lines(out4[, 2], out4[, 3])
+lines(out5[, 2], out5[, 3])
+lines(out6[, 2], out6[, 3])
+points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
+       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
+abline(h = seq(1, -31, -1), col = "grey", lty = 2)
+abline(v = seq(1, -31, -1), col = "grey", lty = 2)
+```
+
+```{r, echo = F}
+LV <- function(time, x, parms) {
+  with(as.list(c(parms, x)), {
+  
+  dx1 <- x1 * (parms[1] - parms[2] * x2)
+  dx2 <- x2 * (parms[3] - parms[4] * x1)
+ 
+  return(list(c(dx1, dx2)))
+  })
+}
+
+  
+parameters <- c(b1 = 0.05, a1 = -0.0005, b2 = 0.025, a2 = 0.0007)
+ini_state <- c(x1 = -30.1, x2 = -0.4)
+times <- seq(0, 1000, 1)
+out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
+
+ini_state2 <- c(x1 = -30.1, x2 = -0.9)
+out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times)
+
+ini_state3 <- c(x1 = -30.1, x2 = -1.4)
+out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times)
+
+ini_state4 <- c(x1 = -30.1, x2 = -1.9)
+out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times)
+
+ini_state5 <- c(x1 = -30.1, x2 = -2.4)
+out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times)
+
+ini_state6 <- c(x1 = -30.1, x2 = -2.9)
+out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
+```
+
+```{r, echo = F, dpi = 512}
+plot(out[, 2], out[, 3], type = "l", ylim = c(-1050, 0),
+     main = "Седловая точка процесса",
+     ylab = "y",
+     xlab = "x")
+lines(out2[, 2], out2[, 3])
+lines(out3[, 2], out3[, 3])
+lines(out4[, 2], out4[, 3])
+lines(out5[, 2], out5[, 3])
+lines(out6[, 2], out6[, 3])
+points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
+       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
+abline(h = seq(-1100, 100, 50), col = "grey", lty = 2)
+abline(v = seq(-300, 100, 20), col = "grey", lty = 2)
+```
+
+
+```{r, echo = F}
+LV <- function(time, x, parms) {
+  with(as.list(c(parms, x)), {
+  
+  dx1 <- x1 * (parms[1] - parms[2] * x2)
+  dx2 <- x2 * (parms[3] - parms[4] * x1)
+ 
+  return(list(c(dx1, dx2)))
+  })
+}
+
+  
+parameters <- c(b1 = -1.5, a1 = -0.05, b2 = 2.5, a2 = 0.07)
+ini_state <- c(x1 = -1.1, x2 = -1.4)
+times <- seq(0, 200, 0.1)
+out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
+
+ini_state2 <- c(x1 = 1.1, x2 = 1.4)
+out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times)
+
+ini_state3 <- c(x1 = 1.1, x2 = 2.4)
+out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times)
+
+ini_state4 <- c(x1 = 1.1, x2 = -1.4)
+out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times)
+
+ini_state5 <- c(x1 = 1.1, x2 = -2.4)
+out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times)
+
+ini_state6 <- c(x1 = -1.1, x2 = -1.9)
+out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
+```
+
+```{r, echo = F, dpi = 512}
+plot(out[, 2], out[, 3], type = "l",
+     ylim = c(-50, 250),
+     xlim = c(-1, 10),
+     main = "Седловая точка процесса",
+     ylab = "y",
+     xlab = "x")
+lines(out2[, 2], out2[, 3])
+lines(out3[, 2], out3[, 3])
+lines(out4[, 2], out4[, 3])
+lines(out5[, 2], out5[, 3])
+lines(out6[, 2], out6[, 3])
+points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
+       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
+abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2)
+abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2)
+```
 
 ## Определение параметров дифференциальной модели
 
