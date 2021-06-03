@@ -77,3 +77,22 @@ dev.off()
 
 rm("plot_diff")
 rm(list = ls())
+
+
+
+
+
+
+
+
+
+df_russia2_diff_subset <- df_Russia[-(1:240),]
+plot(log(df_russia2_diff_subset$diff_conf / cumsum(df_russia2_diff_subset$diff_conf)), pch = 19, cex = I(0.5))
+abline(a = -2.45, b = -0.019)
+
+plot(x = 241:nrow(df_Russia),
+     y = df_russia2_diff_subset$diff_conf,
+     xlim = c(0, nrow(df_Russia)),
+     ylim = c(0, max(df_Russia$diff_conf)))
+lines(x = 1:nrow(df_Russia),
+      y = )

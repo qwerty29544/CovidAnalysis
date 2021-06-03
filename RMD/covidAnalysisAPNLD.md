@@ -12,6 +12,35 @@ output:
 
 
 
+# Введение
+
+В данной работе ставится задача изучить показатели динамики заболеваемости 
+Covid19 в России и рассмотреть качественный пример парного развития динамики 
+заболеваемости Covid19 в двух странах с точки зрения моделей взаимодействия, 
+построенных на основе систем дифференциальных уравнений.
+
+Ранее был получен значительно большой класс результатов, относящийся к 
+исследованию динамики развития природных систем на основе классических 
+дифференциальных моделей. Среди таких моделей широко известны модель Форрестера,
+модель Гомперца, модель линейного убывания темпов. Подобно любой другой модели 
+развития популяций, динамика численности заболевших Covid19 может отражать 
+динамику распространения вируса как динамику популяции.
+
+В ходе рассмотрения данной проблемы необходимо провести исследование медленных 
+движений ряда данных динамики численности заболевших Covid19, оценить характерные 
+значения почти-периодических компонент ряда, провести качественный анализ 
+будущей тенденции заболеваемости.
+
+За основу исследования трендовой составляющей ряда будет взята классическая 
+дифференциальная постановка задачи моделирования динамики численности популяции 
+на основе модели ограниченного роста Гомперца. 
+
+При исследовании почти-периодических компонент необходимо обратиться к 
+результатам исследований относительно применения функций, идентифицирующих 
+почти-периодические зависимости, а именно: автокорреляционная функция и функция 
+Альтера-Джонса.
+
+
 # Анализ данимики заболеваний Covid19 в России
 
 
@@ -51,7 +80,7 @@ output:
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-1.png){width=800 height=800}
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-15-1.png){width=800 height=800}
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-15-1.png)<!-- -->
 
 
 # Анализ парных движений на фазовых плоскостях
@@ -65,7 +94,7 @@ output:
 В качестве примера возьмём две страны с открытыми туристическими границами - Египет и Беларусь.
 
 
-![](covidAnalysisAPNLD_files/figure-docx/Egypt_Belarus graphics-1.png){width=800 height=800}
+![](covidAnalysisAPNLD_files/figure-docx/Egypt_Belarus graphics-1.png)<!-- -->
 
 График парной динамики показывает нам, что уровень заболеваемости, длительность тактов вспышек заболеваемости в двух странах находятся примерно на одном уровне. На последнем временном отрезке в 350 дней от начала измерений и до настоящего времени видим на графике динамики заболеваемости в Беларуси появившуюся недельную сезонность - коррекцию на некоторый момент времени, являющуюся ответной реакцией процесса на некоторые структурные изменения механизма измерения числа заболевших. Такое качественное изменение характера динамики процесса может существенно повлиять на дальнейший анализ данного процесса. 
 
@@ -73,7 +102,7 @@ output:
 
 Оценим длительность тактов переходных процессов спада и роста количества заболевших относительно точек максимума заражений на графике заболеваемости в Египте.
 
-![](covidAnalysisAPNLD_files/figure-docx/Egypt takt-1.png){height=800}
+![](covidAnalysisAPNLD_files/figure-docx/Egypt takt-1.png)<!-- -->
 
 Из расставленных точек максимума заболеваемости на графиках по Беларуси и Египту видим что в начале процесса существовал некоторый почти-периодический процесс с обеих сторон с лагом между процессами в 30 дней. Также видим что из-за структурного изменения процесса измерения числа заболевших в Беларуси такого эффекта не наблюдалось в последнюю волну. 
 
@@ -221,6 +250,48 @@ $$
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-26-1.png)<!-- -->
 
+
+```r
+parameters <- c(b1 = -1.5, a1 = -0.05, b2 = 2.5, a2 = 0.07)
+ini_state <- c(x1 = -1.1, x2 = -1.4)
+times <- seq(0, 200, 0.1)
+out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
+
+ini_state2 <- c(x1 = 1.1, x2 = 1.4)
+out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times)
+
+ini_state3 <- c(x1 = 1.1, x2 = 2.4)
+out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times)
+
+ini_state4 <- c(x1 = 1.1, x2 = -1.4)
+out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times)
+
+ini_state5 <- c(x1 = 1.1, x2 = -2.4)
+out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times)
+
+ini_state6 <- c(x1 = -1.1, x2 = -1.9)
+out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
+
+plot(out[, 2], out[, 3], type = "l",
+     ylim = c(-50, 250),
+     xlim = c(-1, 10),
+     main = "Седловая точка процесса",
+     ylab = "y",
+     xlab = "x")
+lines(out2[, 2], out2[, 3])
+lines(out3[, 2], out3[, 3])
+lines(out4[, 2], out4[, 3])
+lines(out5[, 2], out5[, 3])
+lines(out6[, 2], out6[, 3])
+points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
+       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
+abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2)
+abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2)
+```
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-27-1.png)<!-- -->
+
+
 ## Определение параметров дифференциальной модели
 
 Тогда, система анаморфоз для определения параметров данной системы взаимодействия выглядит следующим образом:
@@ -247,10 +318,10 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-27-1.png)<!-- -->
-
-
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-28-1.png)<!-- -->
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-29-1.png)<!-- -->
 
  
 **Модель "красной" линии**
@@ -297,110 +368,29 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-30-1.png){width=1000 height=1000}
-
-
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-31-1.png){width=1000 height=1000}
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-32-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-32-1.png){width=1000 height=1000}
 
-
-
-
-
-```r
-df_model2 <- data.frame(Y = diff(S_y_dy), X = (1:length(diff(S_y_dy))))
-model_lm_sy <- lm(Y ~ X, data = df_model2)
-
-df_real2 <- data.frame(Y = log(diff(time_series_Belarus) + 1), 
-                      X = (1:length(diff(time_series_Belarus) + 1)))
-model_Bel <- lm(Y ~ X, data = df_real2)
-
-plot(((diff(S_y_dy) - model_lm_sy$coefficients[1] - 1:length(diff(S_y_dy)) * model_lm_sy$coefficients[2]) * (105) + 
-        model_Bel$coefficients[1] + model_Bel$coefficients[2] * (1:length(diff(time_series_Belarus)))), 
-     col = "blue", type =  "o", cex = I(0.5), lwd = I(0.5), pch = 19,
-     main = "Сравнение моделируемой динамики процесса и исходной",
-     ylab = "Полулогарифм динамики процесса",
-     xlab = paste("Дни с", df_confirmed$date[1]),
-     ylim = c(2, 8.5))
-lines(log(diff(time_series_Belarus)), 
-      col = "red", lwd = I(0.5), type = "o", pch = 19, cex = I(0.5))
-abline(h = seq(0, 9, 0.5), lwd = I(0.5), lty = 2, col = "grey")
-abline(v = seq(0, length(time_series_Belarus) + 10, 25), lwd = I(0.5), lty = 2, col = "grey")
-abline(v = maxes_Egypt - tau, col = "orange2")
-legend(x = 300, y = 4,
-       legend = c("LN приросты Беларусь", "LN приросты модель"),
-       col = c("red", "blue"), lty = c(1, 1), pch = c(19, 19))
-```
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-33-1.png)<!-- -->
 
 
 
-```r
-df1 <- select(df_confirmed, contains("Egypt"))[, ]
-df2 <- select(df_confirmed, contains("Russia"))[, ]
-```
 
-
-```r
-plot(log(diff(df1)))
-```
-
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-35-1.png)<!-- -->
-
-```r
-plot(log(diff(df2)))
-```
-
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-35-2.png)<!-- -->
-
-```r
-plot(log(diff(df1)), ylim = c(3, 11))
-lines(log(diff(df2)))
-```
-
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-35-3.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-34-1.png)<!-- -->
 
 
 
-```r
-S_x = cumsum(c(0, log(diff(df1) + 1)))
-S_y = cumsum(c(0, log(diff(df2) + 1)))
-
-S_x_dx <- S_x * (beta_X_blue - alpha_X_blue * S_y)
-S_y_dy <- S_y * (beta_Y_green - alpha_Y_green * S_x)
-```
 
 
-
-```r
-a <- 0.005
-b <- 0
-
-plot((diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5, 
-     type = "o",
-     pch = 19, 
-     lwd = I(0.5),
-     cex = I(0.5),
-     col = "red",
-     ylim = c(1, 9))
-lines(((diff(S_y_dy) + 0.0165) * 100) - 4 - 1.3 * 10e-03 * 1:length(diff(S_y_dy)) + 5.5,
-      type = "o",
-      pch = 19,
-      lwd = I(0.5),
-      cex = I(0.5),
-      col = "blue")
-```
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-37-1.png)<!-- -->
 
-```r
-plot(x = (diff(S_x_dx) - a * (1:length(diff(S_x_dx))) - b) * 10 + 5, 
-     y = ((diff(S_y_dy) + 0.0165) * 100) - 4 - 1.3 * 10e-03 * 1:length(diff(S_y_dy)) + 5.5,
-     xlim = c(1, 5),
-     ylim = c(6, 7.5))
-```
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-38-1.png)<!-- -->
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-37-2.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-39-1.png)<!-- -->
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-40-1.png)<!-- -->
+

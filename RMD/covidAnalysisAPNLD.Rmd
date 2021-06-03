@@ -231,6 +231,35 @@ df_deaths$date <- as.Date(df_deaths$date)
 df_deaths$World <- rowSums(df_deaths[, 3:ncol(df_deaths)])
 ```
 
+# Введение
+
+В данной работе ставится задача изучить показатели динамики заболеваемости 
+Covid19 в России и рассмотреть качественный пример парного развития динамики 
+заболеваемости Covid19 в двух странах с точки зрения моделей взаимодействия, 
+построенных на основе систем дифференциальных уравнений.
+
+Ранее был получен значительный класс результатов, относящийся к 
+исследованию динамики развития природных систем на основе классических 
+дифференциальных моделей. Среди таких моделей широко известны модель Форрестера,
+модель Гомперца, модель линейного убывания темпов. Подобно любой другой модели 
+развития популяций, динамика численности заболевших Covid19 может отражать 
+динамику распространения вируса как динамику популяции.
+
+В ходе рассмотрения данной проблемы необходимо провести исследование медленных 
+движений ряда данных динамики численности заболевших Covid19, оценить характерные 
+значения почти-периодических компонент ряда, провести качественный анализ 
+будущей тенденции заболеваемости.
+
+За основу исследования трендовой составляющей ряда будет взята классическая 
+дифференциальная постановка задачи моделирования динамики численности популяции 
+на основе модели ограниченного роста Гомперца. 
+
+При исследовании почти-периодических компонент необходимо обратиться к 
+результатам исследований относительно применения функций, идентифицирующих 
+почти-периодические зависимости, а именно: автокорреляционная функция и функция 
+Альтера-Джонса.
+
+
 # Анализ данимики заболеваний Covid19 в России
 
 ```{r, echo=F}
@@ -514,7 +543,7 @@ lines(x = 1:length(gmp_diff2_it), y = gmp_diff2_approx)
 ```
 
 
-```{r, echo = F, out.height=800, out.width=800, dpi = 1024, warning=FALSE}
+```{r, echo = F, dpi = 1024, warning=FALSE}
 plot(y = gmp_diff2 / cumsum(gmp_diff2),
      x = log(cumsum(gmp_diff2)),
      ylim = c(0, 0.1), xlim = c(11, 15.5), cex = I(0.6), pch = 19)
@@ -538,7 +567,7 @@ abline(v = -b / a, col = "red")
 В качестве примера возьмём две страны с открытыми туристическими границами - Египет и Беларусь.
 
 
-```{r Egypt_Belarus graphics, out.height=800, out.width=800, echo = F, dpi = 1024}
+```{r Egypt_Belarus graphics, echo = F, dpi = 1024}
 time_series_Egypt <- select(df_confirmed, contains("Egypt"))[, ]
 time_series_Belarus <- select(df_confirmed, contains("Belarus"))[, ]
 
@@ -564,7 +593,7 @@ abline(v = seq(0, length(time_series_Egypt) + 10, 25), lwd = I(0.5), lty = 2, co
 
 Оценим длительность тактов переходных процессов спада и роста количества заболевших относительно точек максимума заражений на графике заболеваемости в Египте.
 
-```{r Egypt takt, out.height=800, out.height=800, echo=F, dpi = 512}
+```{r Egypt takt, echo = F, dpi = 1024}
 maxes_Egypt <- c(148, 345, 480)
 tau = 30
 
@@ -596,7 +625,7 @@ abline(h = 0)
 
 Для завершения исследования парного развития процесса заболеваемости в двух странах необходимо провести анализ динамики на фазовой плоскости динамик процессов. Произведём построение графика с осью ординат - заболеваемостью в Египте, и осью абсцисс - заболеваемостью в Беларуси:
 
-```{r , dpi = 512, echo = F}
+```{r, echo = F, dpi = 1024}
 plot(y = log(diff(time_series_Egypt) + 1), x = log(diff(time_series_Belarus) + 1),
      xlab = "Динамика заболеваемости в Беларуси в полулогарифмах",
      ylab = "Динамика заболеваемости в Египте в полулогарифмах",
@@ -619,7 +648,7 @@ graphics::rect(6.9, 4.5, 9, 7.5, col = "blue", density = I(10))
 
 На фазовой плоскости динамики двух процессов наблюдаем замкнутый контур завершённого полного такта взаимодействия двух процессов, после которого последовало продолжение огибающего контура в правой части графика. Наблюдаем такую же структурную навивку с отклонениями недельных колебаний в сторону исходной эллипсовой кривой такта взаимодействия двух процессов (выделено синими штрихами).
 
-```{r, echo=F, dpi = 512}
+```{r, echo = F, dpi = 1024}
 plot(x = 1:length(time_series_Belarus), y = c(0, log(diff(time_series_Belarus) + 1)),
      col = "red", type = "o", cex = I(0.5), lwd = I(0.5), pch = 19,
      main = "Анализ тактов заболеваемости парного процесса",
@@ -642,7 +671,7 @@ abline(h = c(4.5, 7.5), col = "blue", lty = 2)
 abline(h = c(4.9, 6.9), col = "red", lty = 2)
 ```
 
-```{r, echo = F, dpi = 512}
+```{r, echo = F, dpi = 1024}
 plot(y = log(diff(time_series_Egypt) + 1), x = log(diff(time_series_Belarus) + 1),
      xlab = "Динамика заболеваемости в Беларуси в полулогарифмах",
      ylab = "Динамика заболеваемости в Египте в полулогарифмах",
@@ -665,7 +694,7 @@ graphics::rect(6.9, 4.5, 9, 7.5, col = "blue", density = I(10))
 
 Хорошим тестом для проверки как лага по времени отставания двух процессов друг относительно друга так и зависимости между ними с точки зрения системы дифференциальных уравнений может оказаться смещение на лаг отставания процесса друг относительно друга в сторону постановки "процесса под процесс" так, чтобы такты двух процессов оказались синхронизированными. В таком случае при подобном смещении на графике фазовой плоскости будут образовываться прямолинейные зависимости, обозначающие высокую степень корреляции двух процессов во времени.
 
-```{r, dpi = 512, echo = F}
+```{r, echo = F, dpi = 1024}
 plot(x = 1:length(time_series_Belarus) + tau, y = c(0, log(diff(time_series_Belarus) + 1)),
      col = "red", type = "o", cex = I(0.5), lwd = I(0.5), pch = 19,
      main = "Тест на смещение процесса заболеваемости во времени",
@@ -685,7 +714,7 @@ abline(h = c(4.5, 7.5), col = "blue", lty = 2)
 abline(h = c(4.9, 6.9), col = "red", lty = 2)
 ```
 
-```{r, echo = F, dpi = 512}
+```{r, echo = F, dpi = 1024}
 plot(y = log(diff(time_series_Egypt) + 1)[-(1:tau)], 
      x = log(diff(time_series_Belarus) + 1)[-((length(log(diff(time_series_Egypt) + 1)) - tau + 1):length(log(diff(time_series_Egypt) + 1)))],
      xlab = "Динамика заболеваемости в Беларуси в полулогарифмах",
@@ -864,7 +893,7 @@ times6 <- seq(0, 1000, 1)
 out6 <- ode(func = LV, y = ini_state6, parms = parameters6, times = times6)
 ```
 
-```{r, echo = F, dpi = 512}
+```{r, echo = F, dpi = 1024}
 plot(out[, 2], out[, 3], type = "l", ylim = c(-15, 0),
      main = "Седловая точка процесса",
      ylab = "y",
@@ -913,7 +942,7 @@ ini_state6 <- c(x1 = -30.1, x2 = -2.9)
 out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
 ```
 
-```{r, echo = F, dpi = 512}
+```{r, echo = F, dpi = 1024}
 plot(out[, 2], out[, 3], type = "l", ylim = c(-1050, 0),
      main = "Седловая точка процесса",
      ylab = "y",
@@ -963,7 +992,7 @@ ini_state6 <- c(x1 = -1.1, x2 = -1.9)
 out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
 ```
 
-```{r, echo = F, dpi = 512}
+```{r, echo = F, dpi = 1024}
 plot(out[, 2], out[, 3], type = "l",
      ylim = c(-50, 250),
      xlim = c(-1, 10),
@@ -980,6 +1009,45 @@ points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_stat
 abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2)
 abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2)
 ```
+
+```{r}
+parameters <- c(b1 = -1.5, a1 = -0.05, b2 = 2.5, a2 = 0.07)
+ini_state <- c(x1 = -1.1, x2 = -1.4)
+times <- seq(0, 200, 0.1)
+out <- ode(func = LV, y = ini_state, parms = parameters, times = times)
+
+ini_state2 <- c(x1 = 1.1, x2 = 1.4)
+out2 <- ode(func = LV, y = ini_state2, parms = parameters, times = times)
+
+ini_state3 <- c(x1 = 1.1, x2 = 2.4)
+out3 <- ode(func = LV, y = ini_state3, parms = parameters, times = times)
+
+ini_state4 <- c(x1 = 1.1, x2 = -1.4)
+out4 <- ode(func = LV, y = ini_state4, parms = parameters, times = times)
+
+ini_state5 <- c(x1 = 1.1, x2 = -2.4)
+out5 <- ode(func = LV, y = ini_state5, parms = parameters, times = times)
+
+ini_state6 <- c(x1 = -1.1, x2 = -1.9)
+out6 <- ode(func = LV, y = ini_state6, parms = parameters, times = times)
+
+plot(out[, 2], out[, 3], type = "l",
+     ylim = c(-50, 250),
+     xlim = c(-1, 10),
+     main = "Седловая точка процесса",
+     ylab = "y",
+     xlab = "x")
+lines(out2[, 2], out2[, 3])
+lines(out3[, 2], out3[, 3])
+lines(out4[, 2], out4[, 3])
+lines(out5[, 2], out5[, 3])
+lines(out6[, 2], out6[, 3])
+points(x = c(ini_state[1], ini_state2[1], ini_state3[1], ini_state4[1], ini_state5[1], ini_state6[1]), 
+       y = c(ini_state[2], ini_state2[2], ini_state3[2], ini_state4[2], ini_state5[2], ini_state6[2]), col = "red")
+abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2)
+abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2)
+```
+
 
 ## Определение параметров дифференциальной модели
 
@@ -1243,7 +1311,7 @@ legend(x = 300, y = 2,
        col = c("red", "blue"), lty = c(1, 1), pch = c(19, 19))
 ```
 
-```{r}
+```{r, echo = F, dpi = 1024}
 df_model2 <- data.frame(Y = diff(S_y_dy), X = (1:length(diff(S_y_dy))))
 model_lm_sy <- lm(Y ~ X, data = df_model2)
 
@@ -1251,7 +1319,7 @@ df_real2 <- data.frame(Y = log(diff(df2) + 1),
                       X = (1:length(diff(df2) + 1)))
 model_Bel <- lm(Y ~ X, data = df_real2)
 
-plot(((diff(S_y_dy) - model_lm_sy$coefficients[1] - 1:length(diff(S_y_dy)) * model_lm_sy$coefficients[2]) * (105) + 
+plot(((diff(S_y_dy) - model_lm_sy$coefficients[1] - 1:length(diff(S_y_dy)) * model_lm_sy$coefficients[2]) * (110) + 
         model_Bel$coefficients[1] + model_Bel$coefficients[2] * (1:length(diff(df2)))), 
      col = "blue", type =  "o", cex = I(0.5), lwd = I(0.5), pch = 19,
      main = "Сравнение моделируемой динамики процесса и исходной",
