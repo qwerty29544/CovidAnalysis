@@ -118,20 +118,75 @@ $$
 
 ## Дифференциальная модель взаимодействия процессов
 
+Если динамическая система представлена двумя процессами во времени $\left( x(t), y(t) \right)$, тогда модель взаимодействия динамики развития процессов во времени описывается следующей дифференциальной системой второго порядка:
+
+$$
+  \frac{dx}{dt} = x \cdot \left(\beta_{1} - \alpha_{1} \cdot y \right)
+$$
+
+$$
+  \frac{dy}{dt} = y \cdot \left(\beta_{2} - \alpha_{2} \cdot x \right)
+$$
+
+Данная система иллюстрирует в своём частном случае при $\beta_{2} < 0$ и $\alpha_{2} < 0$ классическую модель "хищник-жертва".
+
+Для реальных процессов, имея значения рядов, можно идентифицировать параметры данной системы на основе анаморфоз вида:
+
+$$
+  \frac{dx}{x \cdot dt} = \beta_{1} - \alpha_{1} \cdot y
+$$
+
+$$
+  \frac{dy}{y \cdot dt} = \beta_{2} - \alpha_{2} \cdot x.
+$$
+
+Тогда, линейная модель на спрямляющемся участке графика будет содержать в себе параметры динамической системы, показаной выше.
+
+# Анализ динамики заболеваний Covid19 в России
 
 
-# Анализ данимики заболеваний Covid19 в России
 
+## Графическое предобследование
 
+Проиллюстрируем динамику заболеваемости в России с помощью графика в следующих координатах: по оси абсцисс отложим дни с момента "2021-01-22", а по оси ординат значения заболеваний в России каждый день суммарно по всем регионам. Также оранжевыми линиями отобразим пики на графике, а именно локальные максимумы "волн" заражений. Между максимумами отложим равные интервалы в 114 дней и получим локальные минимумы "волн" заражений.
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-2-1.png){width=800 height=800}
 
+При помощи графического предобследования было определено характерное время смены тенденции процесса, а именно $T = 114$ дней для России по текущим данным. Определены даты пиковых заражений и даты локальных минимумов.
+
+  1. Первый максимум 2020-05-10: 1.1012\times 10^{4}.
+  2. Первый минимум 2020-09-01: 4670.
+  3. Второй максимум: 2020-12-24: 2.9499\times 10^{4}.
+  4. Второй минимум: 2021-04-17: 9201
+
+## Анализ быстрых движений
+
+Анализ быстрых движений подразумевает исследование сезонной компоненты относительно трендовой составляющей динамики заболеваемости. По построенному графику в разделе графического предобследования можно сказать о том, что в данной системе присутствует очень сильно выраженный тренд и очень маленькие, по сравнению с трендовыми значениями, колебательные составляющие.
+
+Для того чтобы охарактеризовать колебательные движения относительно тренда необходимо произвести исследование динамики относительно тренда на почти-периодические компоненты, то есть найти характерные времена почти-периода. Для того чтобы это сделать, сперва необходимо удалить тренд из ряда. Это можно сделать либо простым численным дифференцированием, либо специальными функциями исключения тренда.
+
+Функция исключения тренда:
+
+$$
+  R(t) = ln \left( \frac{y_{t - 1} * y_{t + 1}}{y_{t}^2} \right).
+$$
+
+Построим график функции исключения тренда исходной динамики:
+
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-3-1.png){width=800 height=800}
 
+К данному ряду применим автокорреляционную функцию и функцию Альтера-Джонса для поиска характерного времени $\tau$ - времени почти-периода малых колебаний относительно тренда:
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-4-1.png){width=800 height=800}
 
+
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-5-1.png){width=800 height=800}
+
+На основе функции Альтера-Джонса и автокорреляционной фунции нами было получено характерной время почти-периода $\tau = 7$ дней, или неделя.
+
+## Анализ медленных движений ряда
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-6-1.png){width=800 height=800}
 
 36 дней
 
@@ -139,16 +194,14 @@ $$
 
 114 дней интервал
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-6-1.png){width=800 height=800}
-
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-7-1.png){width=800 height=800}
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-8-1.png){width=800 height=800}
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-9-1.png){width=800 height=800}
 
-
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-10-1.png){width=800 height=800}
+
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-11-1.png){width=800 height=800}
 
@@ -158,8 +211,10 @@ $$
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-14-1.png){width=800 height=800}
 
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-15-1.png){width=800 height=800}
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-15-1.png)<!-- -->
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-1.png)<!-- -->
 
 
 # Анализ парных движений на фазовых плоскостях
@@ -187,19 +242,19 @@ $$
 
 Для завершения исследования парного развития процесса заболеваемости в двух странах необходимо провести анализ динамики на фазовой плоскости динамик процессов. Произведём построение графика с осью ординат - заболеваемостью в Египте, и осью абсцисс - заболеваемостью в Беларуси:
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-16-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-17-1.png)<!-- -->
 
 На фазовой плоскости динамики двух процессов наблюдаем замкнутый контур завершённого полного такта взаимодействия двух процессов, после которого последовало продолжение огибающего контура в правой части графика. Наблюдаем такую же структурную навивку с отклонениями недельных колебаний в сторону исходной эллипсовой кривой такта взаимодействия двух процессов (выделено синими штрихами).
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-17-1.png)<!-- -->
-
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-18-1.png)<!-- -->
-
-Хорошим тестом для проверки как лага по времени отставания двух процессов друг относительно друга так и зависимости между ними с точки зрения системы дифференциальных уравнений может оказаться смещение на лаг отставания процесса друг относительно друга в сторону постановки "процесса под процесс" так, чтобы такты двух процессов оказались синхронизированными. В таком случае при подобном смещении на графике фазовой плоскости будут образовываться прямолинейные зависимости, обозначающие высокую степень корреляции двух процессов во времени.
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-19-1.png)<!-- -->
 
+Хорошим тестом для проверки как лага по времени отставания двух процессов друг относительно друга так и зависимости между ними с точки зрения системы дифференциальных уравнений может оказаться смещение на лаг отставания процесса друг относительно друга в сторону постановки "процесса под процесс" так, чтобы такты двух процессов оказались синхронизированными. В таком случае при подобном смещении на графике фазовой плоскости будут образовываться прямолинейные зависимости, обозначающие высокую степень корреляции двух процессов во времени.
+
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-20-1.png)<!-- -->
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-21-1.png)<!-- -->
 
 Таким образом, так же на качественном уровне нами было получено заключение о высокой корреляции процессов после смещения их друг относительно друга на такт запаздывания.
 
@@ -318,16 +373,16 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-22-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-23-1.png)<!-- -->
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-24-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-25-1.png)<!-- -->
 
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-26-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-27-1.png)<!-- -->
 
 
 ```r
@@ -368,7 +423,7 @@ abline(h = seq(-1100, 1100, 50), col = "grey", lty = 2)
 abline(v = seq(-1000, 1000, 0.25), col = "grey", lty = 2)
 ```
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-27-1.png)<!-- -->
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-28-1.png)<!-- -->
 
 
 ## Определение параметров дифференциальной модели
@@ -382,6 +437,7 @@ $$
 $$
   \frac{dy}{y \cdot dt} = \beta_{2} - \alpha_{2} \cdot x
 $$
+
 Алгоритм определения данных параметров выглядит следующим образом: 
 
   1. построить в спрямляющих функциональных координатах исходные зависимости,
@@ -397,10 +453,10 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-28-1.png)<!-- -->
-
-
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-29-1.png)<!-- -->
+
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-30-1.png)<!-- -->
 
  
 **Модель "красной" линии**
@@ -447,15 +503,10 @@ $$
 
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-31-1.png){width=1000 height=1000}
-
-
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-32-1.png){width=1000 height=1000}
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-33-1.png)<!-- -->
-
-
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-33-1.png){width=1000 height=1000}
 
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-34-1.png)<!-- -->
@@ -463,15 +514,20 @@ $$
 
 
 
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-35-1.png)<!-- -->
 
 
-![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-37-1.png)<!-- -->
+
+
+
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-38-1.png)<!-- -->
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-39-1.png)<!-- -->
 
 ![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-40-1.png)<!-- -->
+
+![](covidAnalysisAPNLD_files/figure-docx/unnamed-chunk-41-1.png)<!-- -->
 
 
 
